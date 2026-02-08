@@ -1,0 +1,23 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Environment
+.env
+
+# Logs
+*.log
+
+# macOS
+.DS_Store
+
+# Claude Code
+.claude/
+
+# Downloaded and generated files (user generates their own)
+downloads/
+out/
+reports/*.jsonl
