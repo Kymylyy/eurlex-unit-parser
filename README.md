@@ -2,7 +2,7 @@
 
 Parser for EU Official Journal (EUR-Lex) HTML documents.
 It converts ELI-style legislation pages into a flat JSON list of legal units
-(recitals, articles, paragraphs, points, subpoints, annex items).
+(document titles, recitals, articles, paragraphs, points, subpoints, annex items).
 
 ## Status
 
