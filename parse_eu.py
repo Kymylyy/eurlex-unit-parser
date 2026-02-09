@@ -852,6 +852,8 @@ class EUParser:
 
                 if child.name == 'p':
                     classes = set(child.get('class', []))
+                    if 'oj-note' in classes:
+                        continue
                     if classes & skip_classes:
                         continue
                     p_copy = BeautifulSoup(str(child), 'lxml').find('p') or child
@@ -1090,6 +1092,8 @@ class EUParser:
                         if not isinstance(child, Tag):
                             continue
                         if child.name == 'p':
+                            if 'oj-note' in child.get('class', []):
+                                continue
                             if not first_p_seen:
                                 first_p_seen = True
                                 continue  # Skip first <p> (already in get_cell_text)
