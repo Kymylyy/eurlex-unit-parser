@@ -28,7 +28,7 @@ warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 class Unit:
     """Represents a single parsed unit (recital, article, paragraph, point, etc.)."""
     id: str
-    type: str  # recital, article, paragraph, point, subpoint, subsubpoint, annex, annex_item
+    type: str  # document_title, recital, article, paragraph, point, subpoint, subsubpoint, annex, annex_item
     ref: Optional[str]  # raw label text e.g. "(a)", "1.", "(i)"
     text: str
     parent_id: Optional[str]
@@ -324,6 +324,9 @@ class EUParser:
         # Count expected elements for validation
         self._count_expected_elements()
 
+        # Parse document title block (if present)
+        self._parse_document_title()
+
         # Parse recitals (OJ format only - consolidated doesn't have them)
         self._parse_recitals()
 
@@ -383,6 +386,46 @@ class EUParser:
                 suffix += 1
         self._unit_ids.add(unit.id)
         self.units.append(unit)
+
+    # -------------------------------------------------------------------------
+    # Document Title Parsing
+    # -------------------------------------------------------------------------
+
+    def _parse_document_title(self):
+        """Parse document title block from OJ documents, if present."""
+        title_div = self.soup.find('div', class_='eli-main-title')
+        if not title_div:
+            title_div = self.soup.find('div', id=lambda x: x and x.startswith('tit_'))
+        if not title_div:
+            return
+
+        title_parts = []
+        title_paragraphs = title_div.find_all('p', class_='oj-doc-ti')
+        if not title_paragraphs:
+            title_paragraphs = title_div.find_all('p')
+
+        for p in title_paragraphs:
+            p_copy = BeautifulSoup(str(p), 'lxml').find('p') or p
+            remove_note_tags(p_copy)
+            text = normalize_text(p_copy.get_text(separator=' ', strip=True))
+            if not text:
+                continue
+            if re.match(r'^\(\s*Text with .* relevance\s*\)$', text, re.IGNORECASE):
+                continue
+            title_parts.append(text)
+
+        if not title_parts:
+            return
+
+        self._add_unit(Unit(
+            id='document-title',
+            type='document_title',
+            ref=None,
+            text=' '.join(title_parts),
+            parent_id=None,
+            source_id=title_div.get('id', ''),
+            source_file=self.source_file,
+        ))
 
     # -------------------------------------------------------------------------
     # Recital Parsing
