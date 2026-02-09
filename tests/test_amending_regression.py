@@ -122,3 +122,36 @@ def test_type_accuracy_report(celex):
           f"strict={metrics['coverage_pct']:.1f}%, "
           f"recall={metrics['text_recall_pct']:.1f}%, "
           f"units={metrics['total_units']}")
+
+
+def test_dora_footnote_citation_not_parsed_as_amendment_text():
+    """Footnote OJ citations in DORA amendments must not become JSON units."""
+    html_path = HTML_DIR / "DORA.html"
+    if not html_path.exists():
+        pytest.skip(f"HTML not found: {html_path}")
+
+    with open(html_path, "r", encoding="utf-8") as f:
+        html_content = f.read()
+
+    parser = EUParser(str(html_path))
+    units = parser.parse(html_content)
+    units_data = [u.__dict__ for u in units]
+
+    soup = BeautifulSoup(html_content, "lxml")
+    html_footnotes = 0
+    for art_id in ("art_59", "art_60", "art_61", "art_62"):
+        art = soup.find("div", id=art_id)
+        if not art:
+            continue
+        for p in art.find_all("p", class_="oj-note"):
+            if "OJ L 333, 27.12.2022, p. 1" in p.get_text(" ", strip=True):
+                html_footnotes += 1
+
+    assert html_footnotes >= 4, "Expected OJ footnote citations in DORA HTML"
+
+    leaked = [
+        u["id"] for u in units_data
+        if u.get("article_number") in {"59", "60", "61", "62"}
+        and "OJ L 333, 27.12.2022, p. 1" in u.get("text", "")
+    ]
+    assert leaked == [], f"Footnote citation leaked into JSON units: {leaked}"
