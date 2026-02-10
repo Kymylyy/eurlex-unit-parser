@@ -93,13 +93,27 @@ class EnrichmentMixin:
     def _compute_document_metadata(self) -> None:
         title_unit = next((u for u in self.units if u.type == "document_title"), None)
 
+        amendment_text_article_numbers = {
+            unit.article_number for unit in self.units if unit.is_amendment_text and unit.article_number
+        }
         amendment_articles: list[str] = []
         seen_articles: set[str] = set()
         for unit in self.units:
-            if unit.type == "article" and unit.is_amendment_text and unit.article_number:
-                if unit.article_number not in seen_articles:
-                    seen_articles.add(unit.article_number)
-                    amendment_articles.append(unit.article_number)
+            if unit.type != "article" or not unit.article_number:
+                continue
+
+            is_amending_heading = bool(
+                unit.heading
+                and re.search(r"Amendments?\s+to\b|Amendment\s+of\b", unit.heading, re.IGNORECASE)
+            )
+            is_amending_article = (
+                unit.is_amendment_text
+                or unit.article_number in amendment_text_article_numbers
+                or is_amending_heading
+            )
+            if is_amending_article and unit.article_number not in seen_articles:
+                seen_articles.add(unit.article_number)
+                amendment_articles.append(unit.article_number)
 
         definition_article_numbers = {
             unit.article_number

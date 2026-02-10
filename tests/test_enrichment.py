@@ -198,3 +198,43 @@ def test_document_metadata() -> None:
     assert metadata.total_definitions == 2
     assert metadata.has_annexes is True
     assert metadata.amendment_articles == ["3"]
+
+
+def test_document_metadata_detects_amendments_from_heading_and_child_units() -> None:
+    units = [
+        _make_unit("document-title", "document_title", text="REGULATION (EU) 2022/2554"),
+        _make_unit(
+            "art-59",
+            "article",
+            article_number="59",
+            heading="Amendments to Regulation (EC) No 1060/2009",
+        ),
+        _make_unit(
+            "art-59.par-1",
+            "paragraph",
+            parent_id="art-59",
+            article_number="59",
+            paragraph_number="1",
+            is_amendment_text=True,
+        ),
+        _make_unit(
+            "art-60",
+            "article",
+            article_number="60",
+            heading="Amendments to Regulation (EU) No 648/2012",
+        ),
+        _make_unit(
+            "art-60.par-1",
+            "paragraph",
+            parent_id="art-60",
+            article_number="60",
+            paragraph_number="1",
+            is_amendment_text=True,
+        ),
+    ]
+
+    parser = _run_enrichment(units)
+    metadata = parser.document_metadata
+
+    assert metadata is not None
+    assert metadata.amendment_articles == ["59", "60"]
