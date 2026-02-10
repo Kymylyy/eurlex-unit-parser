@@ -21,12 +21,19 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt
-          python -m pip install pytest
+          python -m pip install -e .[dev]
 
       - name: Compile check
         run: |
-          python -m py_compile parse_eu.py test_coverage.py run_batch.py
+          python -m py_compile parse_eu.py test_coverage.py run_batch.py download_eurlex.py
+
+      - name: Lint
+        run: |
+          ruff check .
+
+      - name: Typecheck
+        run: |
+          mypy src/eurlex_unit_parser
 
       - name: Run tests
         run: |
