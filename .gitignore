@@ -16,6 +16,7 @@ __pycache__/
 
 # Claude Code
 .claude/
+AGENTS.local.md
 
 # Downloaded and generated files (user generates their own)
 downloads/
