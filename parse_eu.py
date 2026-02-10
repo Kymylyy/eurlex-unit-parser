@@ -12,6 +12,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from eurlex_unit_parser import (  # noqa: E402
+    Citation,
     DocumentMetadata,
     EUParser,
     Unit,
@@ -26,6 +27,7 @@ from eurlex_unit_parser.cli.parse import main  # noqa: E402
 
 __all__ = [
     "EUParser",
+    "Citation",
     "DocumentMetadata",
     "Unit",
     "ValidationReport",

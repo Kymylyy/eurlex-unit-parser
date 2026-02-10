@@ -51,3 +51,42 @@ Footnotes should be captured as structured data instead of being only stripped, 
 - [ ] Add/extend regression tests.
 - [ ] Validate with `ruff`, `mypy`, `pytest`, and batch coverage.
 - [ ] Document behavior in `README.md` and `CHANGELOG.md` once implemented.
+
+## P2: Citation extraction v0.2 expansion
+
+- Status: Proposed
+- Priority: Medium
+- Last updated: 2026-02-10
+
+### Problem statement
+
+Citation extraction v0.1 intentionally implements only core internal + EU legislation
+patterns. High-value legal-reference patterns remain out of scope and should be added
+without regressing v0.1 precision.
+
+### Scope (v0.2 targets)
+
+- Internal subparagraph references (`first/second/third subparagraph`).
+- Internal structural references (`Chapter`, `Section`, `Annex`).
+- Treaty references (`TFEU`, `TEU`, long-form treaty mentions).
+- Optional `eu_case` extraction (`Case C-...`) once validated on corpus.
+- Optional connective phrase tagging as auxiliary citation context.
+
+### Non-goals
+
+- Rewriting parser architecture.
+- Mixing Polish citation extraction into this repository scope.
+
+### Acceptance criteria
+
+- New citation types/patterns are covered by deterministic tests.
+- No overlap regression with v0.1 patterns.
+- Existing parser/enrichment tests remain green.
+- `README.md` and `CHANGELOG.md` document each added pattern family.
+
+### Implementation checklist
+
+- [ ] Add new regex matcher families with explicit ordering and overlap guards.
+- [ ] Extend citation model only if required by finalized v0.2 schema.
+- [ ] Add focused regression tests for each new pattern family.
+- [ ] Validate with `ruff`, `mypy`, `pytest`, and benchmark batch checks.

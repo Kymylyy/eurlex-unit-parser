@@ -7,6 +7,10 @@ The format is based on Keep a Changelog and this project uses Semantic Versionin
 ## [Unreleased]
 
 ### Added
+- Citation extraction enrichment (`Unit.citations`) for v0.1 EU reference patterns
+  (internal references and EU legislation references).
+- `Citation` model exported in package and legacy wrapper APIs.
+- Citation extraction regression tests (`tests/test_citations.py`).
 - Regression tests for difficult amending-document cases.
 - Split coverage metrics (`gone` vs `misclassified`) in coverage outputs.
 - Packaging metadata via `pyproject.toml` with installable console scripts:
@@ -28,6 +32,7 @@ The format is based on Keep a Changelog and this project uses Semantic Versionin
   validated on the extended 70-link corpus.
 
 ### Changed
+- Parser enrichment pipeline now runs citation extraction and includes `citations` in JSON output.
 - Improved amending article parsing path to preserve structure and point extraction.
 - Improved list-table detection fallback heuristic.
 - Batch reporting updated to use machine-readable metrics.
