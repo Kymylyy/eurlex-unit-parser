@@ -1,7 +1,7 @@
 # EUR-Lex Unit Parser
 
 Parser for EU Official Journal (EUR-Lex) HTML documents.
-It converts ELI-style legislation pages into a flat JSON list of legal units
+It converts ELI-style legislation pages into structured JSON with document metadata and legal units
 (document titles, recitals, articles, paragraphs, points, subpoints, annex items).
 
 ## Status
@@ -98,7 +98,12 @@ from parse_eu import remove_note_tags, normalize_text, strip_leading_label, is_l
 
 ## Output Format
 
-Each JSON output is a flat array of units.
+Each JSON output is an object:
+
+- `document_metadata`: document-level summary metadata
+- `units`: flat array of parsed units
+
+Breaking change: legacy root-list JSON is no longer supported by coverage/batch tools.
 
 Canonical example in repo:
 
@@ -108,14 +113,35 @@ Example:
 
 ```json
 {
-  "id": "art-5.par-1.pt-a",
-  "type": "point",
-  "ref": "(a)",
-  "text": "processed lawfully, fairly and in a transparent manner...",
-  "parent_id": "art-5.par-1",
-  "article_number": "5",
-  "paragraph_number": "1",
-  "point_label": "a"
+  "document_metadata": {
+    "title": "REGULATION (EU) 2022/2554 ...",
+    "total_units": 888,
+    "total_articles": 64,
+    "total_paragraphs": 267,
+    "total_points": 385,
+    "total_definitions": 65,
+    "has_annexes": false,
+    "amendment_articles": ["59", "60", "61", "62", "63"]
+  },
+  "units": [
+    {
+      "id": "art-5.par-1.pt-a",
+      "type": "point",
+      "ref": "(a)",
+      "text": "processed lawfully, fairly and in a transparent manner...",
+      "parent_id": "art-5.par-1",
+      "article_number": "5",
+      "paragraph_number": "1",
+      "point_label": "a",
+      "target_path": "Art. 5(1)(a)",
+      "article_heading": "Definitions",
+      "children_count": 0,
+      "is_leaf": true,
+      "is_stem": false,
+      "word_count": 10,
+      "char_count": 61
+    }
+  ]
 }
 ```
 

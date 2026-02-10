@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 from eurlex_unit_parser.models import Unit
 from eurlex_unit_parser.parser.annex import AnnexParserMixin
 from eurlex_unit_parser.parser.consolidated import ConsolidatedParserMixin
+from eurlex_unit_parser.parser.enrichment import EnrichmentMixin
 from eurlex_unit_parser.parser.oj import OJParserMixin
 from eurlex_unit_parser.parser.state import ParserStateMixin
 from eurlex_unit_parser.parser.tables import TablesParserMixin
@@ -19,6 +20,7 @@ class EUParser(
     AnnexParserMixin,
     TablesParserMixin,
     ValidationMixin,
+    EnrichmentMixin,
     ParserStateMixin,
 ):
     """Parser for EU Official Journal HTML files."""
@@ -39,5 +41,6 @@ class EUParser(
         self._parse_annexes()
         self._count_parsed_elements()
         self._validate()
+        self._enrich()
 
         return self.units

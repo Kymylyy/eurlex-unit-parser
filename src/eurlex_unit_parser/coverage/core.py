@@ -24,6 +24,21 @@ from eurlex_unit_parser.coverage.extract_json import (
 )
 
 
+def _load_units_payload(payload: object, json_path: Path) -> list[dict]:
+    if not isinstance(payload, dict):
+        raise ValueError(
+            f"Unsupported JSON format in {json_path}: expected object root with key 'units'."
+        )
+
+    units = payload.get("units")
+    if not isinstance(units, list):
+        raise ValueError(
+            f"Unsupported JSON format in {json_path}: key 'units' must be a list."
+        )
+
+    return units
+
+
 def compare_counters(html_counter: Counter, json_counter: Counter) -> dict:
     """
     Compare two counters.
@@ -58,7 +73,9 @@ def coverage_test(html_path: Path, json_path: Path, oracle: str = "naive") -> di
         soup = BeautifulSoup(f.read(), "lxml")
 
     with open(json_path, "r", encoding="utf-8") as f:
-        units = json.load(f)
+        payload = json.load(f)
+
+    units = _load_units_payload(payload, json_path)
 
     is_consolidated = detect_format(soup)
 

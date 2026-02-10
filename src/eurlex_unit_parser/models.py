@@ -33,6 +33,15 @@ class Unit:
 
     source_xpath: Optional[str] = None
 
+    # Post-parse enrichment fields
+    target_path: Optional[str] = None
+    article_heading: Optional[str] = None
+    children_count: int = 0
+    is_leaf: bool = True
+    is_stem: bool = False
+    word_count: int = 0
+    char_count: int = 0
+
 
 @dataclass
 class ValidationReport:
@@ -53,3 +62,17 @@ class ValidationReport:
             and not self.unparsed_nodes
             and not self.mismatched_labels
         )
+
+
+@dataclass
+class DocumentMetadata:
+    """Document-level metadata computed from parsed units."""
+
+    title: Optional[str] = None
+    total_units: int = 0
+    total_articles: int = 0
+    total_paragraphs: int = 0
+    total_points: int = 0
+    total_definitions: int = 0
+    has_annexes: bool = False
+    amendment_articles: list[str] = field(default_factory=list)

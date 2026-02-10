@@ -13,6 +13,7 @@ def test_legacy_parse_imports() -> None:
     import parse_eu
 
     assert hasattr(parse_eu, "EUParser")
+    assert hasattr(parse_eu, "DocumentMetadata")
     assert hasattr(parse_eu, "remove_note_tags")
     assert hasattr(parse_eu, "normalize_text")
     assert hasattr(parse_eu, "strip_leading_label")
@@ -38,6 +39,7 @@ def test_package_public_imports() -> None:
     import eurlex_unit_parser
 
     assert hasattr(eurlex_unit_parser, "EUParser")
+    assert hasattr(eurlex_unit_parser, "DocumentMetadata")
     assert hasattr(eurlex_unit_parser, "Unit")
     assert hasattr(eurlex_unit_parser, "ValidationReport")
     assert hasattr(eurlex_unit_parser, "remove_note_tags")

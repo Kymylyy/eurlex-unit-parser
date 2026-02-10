@@ -65,9 +65,29 @@ def main() -> None:
         with open(html_path, "r", encoding="utf-8") as f:
             soup = BeautifulSoup(f.read(), "lxml")
         with open(json_path, "r", encoding="utf-8") as f:
-            units = json.load(f)
+            payload = json.load(f)
+        if not isinstance(payload, dict):
+            print(
+                f"Error: Unsupported JSON format in {json_path}: expected object root with key 'units'.",
+                file=sys.stderr,
+            )
+            all_passed = False
+            continue
+        units = payload.get("units")
+        if not isinstance(units, list):
+            print(
+                f"Error: Unsupported JSON format in {json_path}: key 'units' must be a list.",
+                file=sys.stderr,
+            )
+            all_passed = False
+            continue
 
-        report = coverage_test(html_path, json_path, oracle=args.oracle)
+        try:
+            report = coverage_test(html_path, json_path, oracle=args.oracle)
+        except ValueError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            all_passed = False
+            continue
 
         phantom_report: PhantomReport | None = None
         if not args.no_phantom:

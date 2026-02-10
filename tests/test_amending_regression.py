@@ -36,16 +36,26 @@ def _parse_and_test(celex: str):
 
     parser = EUParser(str(html_path))
     units = parser.parse(html_content)
+    units_data = [u.__dict__ for u in units]
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
-        json.dump([u.__dict__ for u in units], f, ensure_ascii=False, indent=2)
+        json.dump(
+            {
+                "document_metadata": parser.document_metadata.__dict__ if parser.document_metadata else None,
+                "units": units_data,
+            },
+            f,
+            ensure_ascii=False,
+            indent=2,
+        )
         json_path = Path(f.name)
 
     try:
         report = coverage_test(html_path, json_path, oracle="mirror")
 
         with open(json_path) as f:
-            units_data = json.load(f)
+            payload = json.load(f)
+            units_data = payload["units"]
 
         hierarchy = validate_hierarchy(units_data)
         ordering = validate_ordering(units_data)

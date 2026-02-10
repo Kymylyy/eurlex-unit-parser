@@ -58,10 +58,14 @@ def main() -> None:
     units = eu_parser.parse(html_content)
 
     units_data = [asdict(u) for u in units]
+    output_data = {
+        "document_metadata": asdict(eu_parser.document_metadata) if eu_parser.document_metadata else None,
+        "units": units_data,
+    }
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(units_data, f, ensure_ascii=False, indent=2)
+        json.dump(output_data, f, ensure_ascii=False, indent=2)
 
     print(f"Parsed {len(units)} units -> {output_path}")
 
