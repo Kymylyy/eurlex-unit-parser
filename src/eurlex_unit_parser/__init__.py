@@ -1,6 +1,6 @@
 """Public package API for eurlex-unit-parser."""
 
-from eurlex_unit_parser.models import Unit, ValidationReport
+from eurlex_unit_parser.models import DocumentMetadata, Unit, ValidationReport
 from eurlex_unit_parser.parser.engine import EUParser
 from eurlex_unit_parser.text_utils import (
     get_cell_text,
@@ -12,6 +12,7 @@ from eurlex_unit_parser.text_utils import (
 
 __all__ = [
     "EUParser",
+    "DocumentMetadata",
     "Unit",
     "ValidationReport",
     "remove_note_tags",

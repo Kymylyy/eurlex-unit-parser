@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from bs4 import BeautifulSoup
 
-from eurlex_unit_parser.models import Unit, ValidationReport
+from eurlex_unit_parser.models import DocumentMetadata, Unit, ValidationReport
 
 
 class ParserStateMixin:
@@ -14,6 +14,7 @@ class ParserStateMixin:
         self.source_file = source_file
         self.units: list[Unit] = []
         self.validation = ValidationReport(source_file=source_file)
+        self.document_metadata: DocumentMetadata | None = None
         self._unit_ids: set[str] = set()
         self.is_consolidated = False
         self.soup: BeautifulSoup | None = None
