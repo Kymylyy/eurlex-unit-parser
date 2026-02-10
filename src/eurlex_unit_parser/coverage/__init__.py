@@ -1,36 +1,24 @@
-#!/usr/bin/env python3
-"""Legacy compatibility wrapper for coverage API and CLI."""
+"""Coverage module public API."""
 
-from __future__ import annotations
-
-import sys
-from pathlib import Path
-
-ROOT = Path(__file__).resolve().parent
-SRC = ROOT / "src"
-if str(SRC) not in sys.path:
-    sys.path.insert(0, str(SRC))
-
-from eurlex_unit_parser.cli.coverage import main  # noqa: E402
-from eurlex_unit_parser.coverage import (  # noqa: E402
+from eurlex_unit_parser.coverage.core import compare_counters, coverage_test
+from eurlex_unit_parser.coverage.extract_html import (
     build_full_html_text_by_section,
-    build_json_section_texts,
     build_naive_section_map,
-    compare_counters,
-    coverage_test,
     detect_format,
-    extract_json_all_texts,
-    extract_json_paragraph_texts,
-    extract_json_point_texts,
     extract_paragraph_texts_consolidated,
     extract_paragraph_texts_oj,
     extract_point_texts_consolidated,
     extract_point_texts_oj,
     normalize_whitespace,
-    print_report,
-    validate_hierarchy,
-    validate_ordering,
 )
+from eurlex_unit_parser.coverage.extract_json import (
+    build_json_section_texts,
+    extract_json_all_texts,
+    extract_json_paragraph_texts,
+    extract_json_point_texts,
+)
+from eurlex_unit_parser.coverage.hierarchy import validate_hierarchy, validate_ordering
+from eurlex_unit_parser.coverage.report import print_report
 
 __all__ = [
     "build_full_html_text_by_section",
@@ -46,13 +34,8 @@ __all__ = [
     "extract_paragraph_texts_oj",
     "extract_point_texts_consolidated",
     "extract_point_texts_oj",
-    "main",
     "normalize_whitespace",
     "print_report",
     "validate_hierarchy",
     "validate_ordering",
 ]
-
-
-if __name__ == "__main__":
-    main()

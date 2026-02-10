@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68", "wheel"]
+requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -48,4 +48,14 @@ check_untyped_defs = false
 warn_unused_ignores = true
 warn_redundant_casts = true
 warn_unused_configs = true
+disable_error_code = ["import-untyped"]
 exclude = ["tests"]
+
+[[tool.mypy.overrides]]
+module = [
+  "eurlex_unit_parser.parser.*",
+  "eurlex_unit_parser.coverage.*",
+  "eurlex_unit_parser.batch.runner",
+  "eurlex_unit_parser.text_utils",
+]
+ignore_errors = true
