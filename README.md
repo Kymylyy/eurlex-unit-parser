@@ -1,4 +1,4 @@
-# EUR-Lex Parser
+# EUR-Lex Unit Parser
 
 Parser for EU Official Journal (EUR-Lex) HTML documents.
 It converts ELI-style legislation pages into a flat JSON list of legal units
@@ -9,73 +9,92 @@ It converts ELI-style legislation pages into a flat JSON list of legal units
 - Language: Python 3.10+
 - License: MIT
 - Validation corpus: 52 EUR-Lex documents (`data/eurlex_links.jsonl`)
-- Latest benchmark target: `mirror` oracle, forced reparse
+- Architecture: modular package (`src/eurlex_unit_parser`) with legacy wrappers preserved
 
-Current benchmark result on this corpus:
+Current benchmark target remains `mirror` oracle with forced reparse.
 
-- `52 / 52 PASS`
-- `gone = 0` (no text loss)
-- `phantom = 0` (no hallucinated text)
-- `hierarchy_ok = true`
-- `ordering_ok = true`
+## Installation
 
-## Requirements
+### Option A: package mode (recommended)
 
-- Python 3.10+
-- Core dependencies: `lxml`, `beautifulsoup4`
-- Optional downloader dependency: `playwright`
+```bash
+python3 -m pip install -e .
+```
 
-Install core dependencies:
+With dev tooling:
+
+```bash
+python3 -m pip install -e .[dev]
+```
+
+Optional downloader dependency:
+
+```bash
+python3 -m pip install -e .[download]
+playwright install chromium
+```
+
+### Option B: legacy script mode
 
 ```bash
 python3 -m pip install -r requirements.txt
 ```
 
-Optional (for remote downloading):
+## Usage
+
+### New CLI (package scripts)
+
+- Parse:
 
 ```bash
-python3 -m pip install playwright
-playwright install chromium
+eurlex-parse --input downloads/eur-lex/32022R2554.html
 ```
 
-## Quick Start
-
-### 1. Parse a single HTML file
+- Coverage:
 
 ```bash
-python3 parse_eu.py --input downloads/eur-lex/32022R2554.html
+eurlex-coverage --input downloads/eur-lex/32022R2554.html --json out/json/32022R2554.json --oracle mirror
 ```
 
-Default outputs:
-
-- `out/json/<name>.json`
-- `out/validation/<name>_validation.json`
-
-### 2. Run coverage test for a single document
+- Batch:
 
 ```bash
-python3 test_coverage.py \
-  --input downloads/eur-lex/32022R2554.html \
-  --json out/json/32022R2554.json \
-  --oracle mirror
+eurlex-batch --force-reparse --oracle mirror
 ```
 
-### 3. Run full batch benchmark (reproducible)
+- Downloader:
 
 ```bash
-python3 run_batch.py --force-reparse --oracle mirror
+eurlex-download "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202401689" EMIR3
 ```
 
-Reports are generated into:
+### Legacy CLI (still supported)
 
-- `reports/eurlex_coverage_success.jsonl`
-- `reports/eurlex_coverage_failures.jsonl`
+- `python3 parse_eu.py ...`
+- `python3 test_coverage.py ...`
+- `python3 run_batch.py ...`
+- `python3 download_eurlex.py ...`
+
+## Public API
+
+### New package imports
+
+```python
+from eurlex_unit_parser import EUParser, Unit, ValidationReport
+```
+
+### Legacy imports (still supported)
+
+```python
+from parse_eu import EUParser
+from parse_eu import remove_note_tags, normalize_text, strip_leading_label, is_list_table, get_cell_text
+```
 
 ## Output Format
 
 Each JSON output is a flat array of units.
 
-Canonical example file in this repository:
+Canonical example in repo:
 
 - `examples/DORA.json` (Regulation (EU) 2022/2554, DORA)
 
@@ -96,12 +115,7 @@ Example:
 
 ## Quality Gates
 
-The project uses two coverage perspectives:
-
-- `text recall`: checks whether source text was preserved (`gone == 0`)
-- `strict coverage`: checks type-accurate matching (e.g. point vs subparagraph)
-
-Batch pass criteria currently used by `run_batch.py`:
+Batch pass criteria used by `eurlex-batch` / `run_batch.py`:
 
 - `gone == 0`
 - `phantom == 0`
@@ -113,23 +127,22 @@ Batch pass criteria currently used by `run_batch.py`:
 
 ```text
 .
-├── data/                     # benchmark links
-├── downloads/                # downloaded HTML corpus (gitignored)
-├── out/                      # parser outputs (gitignored)
-├── examples/                 # committed sample output (DORA)
-├── reports/                  # batch reports (JSONL gitignored)
-├── parse_eu.py               # parser
-├── test_coverage.py          # coverage oracle + validators
-├── run_batch.py              # corpus benchmark runner
-├── tests/                    # regression tests
-└── download_eurlex.py        # downloader helper
+├── data/                         # benchmark links
+├── downloads/                    # downloaded HTML corpus (gitignored)
+├── out/                          # parser outputs (gitignored)
+├── reports/                      # batch reports (JSONL gitignored)
+├── src/eurlex_unit_parser/
+│   ├── parser/                   # modular parser engine + OJ/consolidated/annex flows
+│   ├── coverage/                 # coverage extraction/comparison/report logic
+│   ├── batch/                    # batch pipeline
+│   ├── download/                 # EUR-Lex downloader
+│   └── cli/                      # CLI entrypoints
+├── parse_eu.py                   # legacy wrapper + re-exports
+├── test_coverage.py              # legacy wrapper + re-exports
+├── run_batch.py                  # legacy wrapper + re-exports
+├── download_eurlex.py            # legacy wrapper + re-exports
+└── tests/                        # regression + compatibility tests
 ```
-
-## Known Scope and Limitations
-
-- Focus is EUR-Lex ELI HTML structures used in the benchmark corpus.
-- EUR-Lex markup can evolve; new edge cases may require parser updates.
-- This project does not redistribute legal texts by itself.
 
 ## Security and Responsible Use
 

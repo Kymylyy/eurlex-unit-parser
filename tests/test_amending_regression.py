@@ -13,7 +13,6 @@ from parse_eu import EUParser
 from test_coverage import (
     coverage_test, validate_hierarchy, validate_ordering,
     build_full_html_text_by_section, build_json_section_texts,
-    normalize_whitespace,
 )
 from bs4 import BeautifulSoup
 
