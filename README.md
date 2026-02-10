@@ -119,6 +119,9 @@ Each JSON output is an object:
 - `units`: flat array of parsed units
 
 Each `unit` now includes a `citations` list (possibly empty) populated during enrichment.
+Citation extraction now supports v0.2 patterns and optional metadata fields:
+`article_label`, `point_range`, `paragraph_range`, `subparagraph_ordinal`, `chapter`,
+`section`, `title_ref`, `annex`, `annex_part`, `treaty_code`, `connective_phrase`.
 
 Breaking change: legacy root-list JSON is no longer supported by coverage/batch tools.
 
@@ -142,35 +145,48 @@ Example:
   },
   "units": [
     {
-      "id": "art-5.par-1.pt-a",
-      "type": "point",
-      "ref": "(a)",
-      "text": "processed lawfully, fairly and in a transparent manner...",
-      "parent_id": "art-5.par-1",
+      "id": "art-5.par-2.subpar-1",
+      "type": "subparagraph",
+      "ref": null,
+      "text": "For the purposes of the first subparagraph, the management body shall:",
+      "parent_id": "art-5.par-2",
+      "source_id": "",
+      "source_file": "downloads/eur-lex/32022R2554.html",
       "article_number": "5",
-      "paragraph_number": "1",
-      "point_label": "a",
-      "target_path": "Art. 5(1)(a)",
-      "article_heading": "Definitions",
-      "children_count": 0,
-      "is_leaf": true,
-      "is_stem": false,
-      "word_count": 10,
-      "char_count": 61,
+      "paragraph_number": "2",
+      "point_label": null,
+      "target_path": "Art. 5(2)",
+      "article_heading": "Governance and organisation",
+      "children_count": 9,
+      "is_leaf": false,
+      "is_stem": true,
+      "word_count": 11,
+      "char_count": 70,
       "citations": [
         {
-          "raw_text": "Article 6(1) of Regulation (EU) 2016/679",
-          "citation_type": "eu_legislation",
-          "span_start": 0,
-          "span_end": 40,
-          "article": 6,
-          "paragraph": 1,
+          "raw_text": "the first subparagraph",
+          "citation_type": "internal",
+          "span_start": 20,
+          "span_end": 42,
+          "article": null,
+          "article_label": null,
+          "paragraph": null,
           "point": null,
+          "point_range": null,
           "article_range": null,
-          "target_node_id": "art-6.par-1",
-          "act_type": "regulation",
-          "act_number": "2016/679",
-          "celex": "32016R0679"
+          "paragraph_range": null,
+          "subparagraph_ordinal": "first",
+          "chapter": null,
+          "section": null,
+          "title_ref": null,
+          "annex": null,
+          "annex_part": null,
+          "treaty_code": null,
+          "connective_phrase": "for the purposes of",
+          "target_node_id": null,
+          "act_type": null,
+          "act_number": null,
+          "celex": null
         }
       ]
     }

@@ -13,9 +13,20 @@ class Citation:
     span_start: int
     span_end: int
     article: Optional[int] = None
+    article_label: Optional[str] = None
     paragraph: Optional[int] = None
     point: Optional[str] = None
+    point_range: tuple[str, str] | None = None
     article_range: tuple[int, int] | None = None
+    paragraph_range: tuple[int, int] | None = None
+    subparagraph_ordinal: Optional[str] = None
+    chapter: Optional[str] = None
+    section: Optional[str] = None
+    title_ref: Optional[str] = None
+    annex: Optional[str] = None
+    annex_part: Optional[str] = None
+    treaty_code: Optional[str] = None  # "TFEU" | "TEU" | "CHARTER" | "TREATY_GENERIC" | "PROTOCOL"
+    connective_phrase: Optional[str] = None
     target_node_id: Optional[str] = None
     act_type: Optional[str] = None  # "regulation" | "directive" | "decision"
     act_number: Optional[str] = None
