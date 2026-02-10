@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "eurlex-unit-parser"
+version = "0.1.0"
+description = "Parser for EUR-Lex ELI HTML documents"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [{ name = "EUR-Lex Parser Contributors" }]
+dependencies = [
+  "lxml>=4.9.0",
+  "beautifulsoup4>=4.12.0",
+]
+
+[project.optional-dependencies]
+download = [
+  "playwright>=1.40.0",
+]
+dev = [
+  "pytest>=7.0",
+  "ruff>=0.6.0",
+  "mypy>=1.8.0",
+]
+
+[project.scripts]
+eurlex-parse = "eurlex_unit_parser.cli.parse:main"
+eurlex-coverage = "eurlex_unit_parser.cli.coverage:main"
+eurlex-batch = "eurlex_unit_parser.cli.batch:main"
+eurlex-download = "eurlex_unit_parser.cli.download:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true
+check_untyped_defs = false
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_unused_configs = true
+exclude = ["tests"]
