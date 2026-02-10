@@ -119,6 +119,9 @@ Each JSON output is an object:
 - `units`: flat array of parsed units
 
 Each `unit` now includes a `citations` list (possibly empty) populated during enrichment.
+Citation extraction now supports v0.2 patterns and optional metadata fields:
+`article_label`, `point_range`, `paragraph_range`, `subparagraph_ordinal`, `chapter`,
+`section`, `title_ref`, `annex`, `annex_part`, `treaty_code`, `connective_phrase`.
 
 Breaking change: legacy root-list JSON is no longer supported by coverage/batch tools.
 
@@ -142,32 +145,45 @@ Example:
   },
   "units": [
     {
-      "id": "art-5.par-1",
-      "type": "paragraph",
-      "ref": "1.",
-      "text": "Financial entities shall have in place an internal governance and control framework that ensures an effective and prudent management of ICT risk, in accordance with Article 6(4), in order to achieve a high level of digital operational resilience.",
-      "parent_id": "art-5",
+      "id": "art-5.par-2.subpar-1",
+      "type": "subparagraph",
+      "ref": null,
+      "text": "For the purposes of the first subparagraph, the management body shall:",
+      "parent_id": "art-5.par-2",
+      "source_id": "",
+      "source_file": "downloads/eur-lex/32022R2554.html",
       "article_number": "5",
-      "paragraph_number": "1",
+      "paragraph_number": "2",
       "point_label": null,
-      "target_path": "Art. 5(1)",
+      "target_path": "Art. 5(2)",
       "article_heading": "Governance and organisation",
-      "children_count": 0,
-      "is_leaf": true,
-      "is_stem": false,
-      "word_count": 38,
-      "char_count": 246,
+      "children_count": 9,
+      "is_leaf": false,
+      "is_stem": true,
+      "word_count": 11,
+      "char_count": 70,
       "citations": [
         {
-          "raw_text": "Article 6(4)",
+          "raw_text": "the first subparagraph",
           "citation_type": "internal",
-          "span_start": 165,
-          "span_end": 177,
-          "article": 6,
-          "paragraph": 4,
+          "span_start": 20,
+          "span_end": 42,
+          "article": null,
+          "article_label": null,
+          "paragraph": null,
           "point": null,
+          "point_range": null,
           "article_range": null,
-          "target_node_id": "art-6.par-4",
+          "paragraph_range": null,
+          "subparagraph_ordinal": "first",
+          "chapter": null,
+          "section": null,
+          "title_ref": null,
+          "annex": null,
+          "annex_part": null,
+          "treaty_code": null,
+          "connective_phrase": "for the purposes of",
+          "target_node_id": null,
           "act_type": null,
           "act_number": null,
           "celex": null
