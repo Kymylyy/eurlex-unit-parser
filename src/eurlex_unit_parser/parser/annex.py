@@ -24,12 +24,19 @@ class AnnexParserMixin:
             annex_num = source_id.replace("anx_", "").strip()
 
             title_p = div.find("p", class_="oj-doc-ti")
-            annex_title = title_p.get_text(strip=True) if title_p else f"ANNEX {annex_num}"
+            if title_p:
+                title_copy = BeautifulSoup(str(title_p), "lxml").find("p") or title_p
+                remove_note_tags(title_copy)
+                annex_title = normalize_text(title_copy.get_text(separator=" ", strip=True))
+            else:
+                annex_title = f"ANNEX {annex_num}"
 
             heading_p = div.find("p", class_="oj-ti-grseq-1")
             heading = None
             if heading_p:
-                heading = heading_p.get_text(strip=True)
+                heading_copy = BeautifulSoup(str(heading_p), "lxml").find("p") or heading_p
+                remove_note_tags(heading_copy)
+                heading = normalize_text(heading_copy.get_text(separator=" ", strip=True))
 
             annex_id = f"annex-{annex_num}"
             annex_unit = Unit(
@@ -57,7 +64,9 @@ class AnnexParserMixin:
                 continue
 
             if child.name == "p" and "oj-ti-grseq-1" in child.get("class", []):
-                text = child.get_text(strip=True)
+                child_copy = BeautifulSoup(str(child), "lxml").find("p") or child
+                remove_note_tags(child_copy)
+                text = normalize_text(child_copy.get_text(separator=" ", strip=True))
                 if text.lower().startswith("part "):
                     m = re.match(r"Part\s+([A-Z])", text, re.IGNORECASE)
                     if m:

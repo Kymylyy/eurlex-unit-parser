@@ -163,7 +163,9 @@ def extract_paragraph_texts_oj(soup: BeautifulSoup) -> dict[str, Counter]:
             for row in rows:
                 cells = row.find_all("td")
                 if len(cells) >= 2:
-                    text = get_cell_text(cells[1])
+                    content_copy = BeautifulSoup(str(cells[1]), "lxml").find("td") or cells[1]
+                    remove_note_tags(content_copy)
+                    text = content_copy.get_text(separator=" ", strip=True)
                     text = normalize_text(text)
                     if text and len(text) > 5:
                         result["recitals"][text] += 1
