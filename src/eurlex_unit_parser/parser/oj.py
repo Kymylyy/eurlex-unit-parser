@@ -72,7 +72,9 @@ class OJParserMixin:
                     cells = row.find_all("td")
                     if len(cells) >= 2:
                         label_text = get_cell_text(cells[0]).strip()
-                        content_text = get_cell_text(cells[1])
+                        content_copy = BeautifulSoup(str(cells[1]), "lxml").find("td") or cells[1]
+                        remove_note_tags(content_copy)
+                        content_text = normalize_text(content_copy.get_text(separator=" ", strip=True))
 
                         m = re.match(r"\((\d+)\)", label_text)
                         if m:

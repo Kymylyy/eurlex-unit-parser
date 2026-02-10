@@ -111,3 +111,46 @@ def test_annex_part_and_item_structure() -> None:
     assert "annex-I.part-A" in by_id
     assert "annex-I.part-A.item-a" in by_id
     assert by_id["annex-I.part-A.item-a"]["parent_id"] == "annex-I.part-A"
+
+
+def test_oj_recital_table_preserves_dash_list_text() -> None:
+    html = """
+    <html><body>
+      <div class="eli-subdivision" id="rct_77">
+        <table>
+          <tbody>
+            <tr>
+              <td><p>(77)</p></td>
+              <td>
+                <p>In order to supplement or amend certain non-essential elements:</p>
+                <ul>
+                  <li>— supplementing this Regulation by laying down requirements;</li>
+                </ul>
+                <p>It is of particular importance that the Commission carry out consultations.</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </body></html>
+    """
+    units = _parse(html)
+    recital = next(u for u in units if u["id"] == "recital-77")
+    text = recital["text"]
+    assert "supplementing this Regulation by laying down requirements" in text
+    assert "It is of particular importance that the Commission carry out consultations." in text
+
+
+def test_annex_part_heading_keeps_spaces_between_inline_nodes() -> None:
+    html = """
+    <html><body>
+      <div class="eli-container" id="anx_XVIII">
+        <p class="oj-doc-ti">ANNEX XVIII</p>
+        <p class="oj-ti-grseq-1"><span>Part A</span><span>Contract notice</span></p>
+      </div>
+    </body></html>
+    """
+    units = _parse(html)
+    by_id = {u["id"]: u for u in units}
+    assert "annex-XVIII.part-A" in by_id
+    assert by_id["annex-XVIII.part-A"]["text"] == "Part A Contract notice"

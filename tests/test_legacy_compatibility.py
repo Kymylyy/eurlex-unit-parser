@@ -51,6 +51,7 @@ def test_legacy_cli_help_commands() -> None:
         ROOT / "parse_eu.py",
         ROOT / "test_coverage.py",
         ROOT / "run_batch.py",
+        ROOT / "convert_links_csv.py",
         ROOT / "download_eurlex.py",
     ]
 

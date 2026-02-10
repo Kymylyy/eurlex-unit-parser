@@ -18,6 +18,14 @@ The format is based on Keep a Changelog and this project uses Semantic Versionin
   `is_leaf`, `is_stem`, `word_count`, `char_count`).
 - New `DocumentMetadata` model computed from parsed units.
 - Enrichment regression tests covering structural and document-level metadata.
+- CSV -> JSONL converter for candidate EUR-Lex link sets (`convert_links_csv.py` and
+  `src/eurlex_unit_parser/batch/links_convert.py`).
+- Batch runner support for processing custom corpora in windows:
+  `--links-file`, `--offset`, `--limit`, and per-run snapshots via `--snapshot-tag`.
+- Extended corpus files in `data/`:
+  `eurlex_test_links.csv` and `eurlex_test_links.jsonl` (70 links).
+- Parser/coverage regressions fixed for specific annex heading spacing and OJ recital table extraction,
+  validated on the extended 70-link corpus.
 
 ### Changed
 - Improved amending article parsing path to preserve structure and point extraction.
