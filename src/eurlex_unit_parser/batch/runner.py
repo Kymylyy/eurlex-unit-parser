@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import shutil
 import subprocess
 import sys
 import time
@@ -17,6 +18,7 @@ JSON_DIR = BASE / "out" / "json"
 REPORTS_DIR = BASE / "reports"
 SUCCESS_FILE = REPORTS_DIR / "eurlex_coverage_success.jsonl"
 FAILURE_FILE = REPORTS_DIR / "eurlex_coverage_failures.jsonl"
+BATCH_REPORTS_DIR = REPORTS_DIR / "batches"
 
 PARSER = BASE / "parse_eu.py"
 COVERAGE = BASE / "test_coverage.py"
@@ -25,6 +27,14 @@ DOWNLOADER = BASE / "download_eurlex.py"
 DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
 JSON_DIR.mkdir(parents=True, exist_ok=True)
 REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+BATCH_REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def ensure_output_dirs() -> None:
+    DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    JSON_DIR.mkdir(parents=True, exist_ok=True)
+    REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+    BATCH_REPORTS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def stable_hash(url: str) -> str:
@@ -44,6 +54,36 @@ def to_repo_relative(path: Path) -> str:
         return str(path.resolve().relative_to(BASE.resolve()))
     except ValueError:
         return str(path)
+
+
+def load_entries(links_file: Path) -> list[dict]:
+    entries: list[dict] = []
+    with open(links_file, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                entries.append(json.loads(line))
+    return entries
+
+
+def slice_entries(entries: list[dict], offset: int = 0, limit: int | None = None) -> list[dict]:
+    if offset < 0:
+        raise ValueError("offset must be >= 0")
+    if limit is not None and limit <= 0:
+        raise ValueError("limit must be > 0 when provided")
+
+    if limit is None:
+        return entries[offset:]
+    return entries[offset : offset + limit]
+
+
+def write_batch_snapshots(snapshot_tag: str) -> tuple[Path, Path]:
+    safe_tag = "".join(ch if ch.isalnum() or ch in ("-", "_") else "_" for ch in snapshot_tag.strip())
+    success_snapshot = BATCH_REPORTS_DIR / f"{safe_tag}_success.jsonl"
+    failure_snapshot = BATCH_REPORTS_DIR / f"{safe_tag}_failures.jsonl"
+    shutil.copy2(SUCCESS_FILE, success_snapshot)
+    shutil.copy2(FAILURE_FILE, failure_snapshot)
+    return success_snapshot, failure_snapshot
 
 
 def download_html(url: str, html_path: Path) -> tuple[bool, str]:
@@ -214,19 +254,28 @@ def run_coverage(html_path: Path, json_path: Path, oracle: str = "naive") -> dic
         return report
 
 
-def run_batch(force_reparse: bool = False, oracle: str = "naive") -> int:
-    if not LINKS_FILE.exists():
-        print(f"ERROR: {LINKS_FILE} not found")
+def run_batch(
+    force_reparse: bool = False,
+    oracle: str = "naive",
+    links_file: Path = LINKS_FILE,
+    offset: int = 0,
+    limit: int | None = None,
+    snapshot_tag: str | None = None,
+) -> int:
+    ensure_output_dirs()
+
+    if not links_file.exists():
+        print(f"ERROR: {links_file} not found")
         return 1
 
-    entries = []
-    with open(LINKS_FILE) as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                entries.append(json.loads(line))
+    all_entries = load_entries(links_file)
+    try:
+        entries = slice_entries(all_entries, offset=offset, limit=limit)
+    except ValueError as e:
+        print(f"ERROR: {e}")
+        return 1
 
-    print(f"Loaded {len(entries)} links from {LINKS_FILE}")
+    print(f"Loaded {len(entries)} links from {links_file} (offset={offset}, limit={limit})")
 
     SUCCESS_FILE.write_text("")
     FAILURE_FILE.write_text("")
@@ -332,6 +381,10 @@ def run_batch(force_reparse: bool = False, oracle: str = "naive") -> int:
     print(f"FAIL:  {failure_count}")
     print(f"Success report: {SUCCESS_FILE}")
     print(f"Failure report: {FAILURE_FILE}")
+    if snapshot_tag:
+        success_snapshot, failure_snapshot = write_batch_snapshots(snapshot_tag)
+        print(f"Batch success snapshot: {success_snapshot}")
+        print(f"Batch failure snapshot: {failure_snapshot}")
 
     return 0 if failure_count == 0 else 1
 
@@ -351,9 +404,41 @@ def main() -> None:
         default="naive",
         help="Coverage oracle to use (default: naive)",
     )
+    parser.add_argument(
+        "--links-file",
+        type=Path,
+        default=LINKS_FILE,
+        help=f"Path to JSONL links file (default: {LINKS_FILE})",
+    )
+    parser.add_argument(
+        "--offset",
+        type=int,
+        default=0,
+        help="Start index in links file (default: 0)",
+    )
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="Max number of links to process from offset",
+    )
+    parser.add_argument(
+        "--snapshot-tag",
+        default=None,
+        help="If provided, saves per-run report snapshots in reports/batches/",
+    )
     args = parser.parse_args()
 
-    raise SystemExit(run_batch(force_reparse=args.force_reparse, oracle=args.oracle))
+    raise SystemExit(
+        run_batch(
+            force_reparse=args.force_reparse,
+            oracle=args.oracle,
+            links_file=args.links_file,
+            offset=args.offset,
+            limit=args.limit,
+            snapshot_tag=args.snapshot_tag,
+        )
+    )
 
 
 if __name__ == "__main__":

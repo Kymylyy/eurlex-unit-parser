@@ -8,7 +8,9 @@ It converts ELI-style legislation pages into structured JSON with document metad
 
 - Language: Python 3.10+
 - License: MIT
-- Validation corpus: 52 EUR-Lex documents (`data/eurlex_links.jsonl`)
+- Core validation corpus: 52 EUR-Lex documents (`data/eurlex_links.jsonl`)
+- Extended validation corpus: 70 EUR-Lex documents (`data/eurlex_test_links.jsonl`, source CSV in `data/eurlex_test_links.csv`)
+- Latest extended batch run (2026-02-10): 70/70 PASS (`mirror` oracle, batches of 10)
 - Architecture: modular package (`src/eurlex_unit_parser`) with legacy wrappers preserved
 
 Current benchmark target remains `mirror` oracle with forced reparse.
@@ -68,6 +70,18 @@ eurlex-coverage --input downloads/eur-lex/32022R2554.html --json out/json/32022R
 eurlex-batch --force-reparse --oracle mirror
 ```
 
+- Batch on custom JSONL and windowing (offset/limit):
+
+```bash
+eurlex-batch --links-file data/eurlex_test_links.jsonl --offset 0 --limit 10 --force-reparse --oracle mirror --snapshot-tag batch_01
+```
+
+- Convert candidate CSV links to JSONL:
+
+```bash
+python3 convert_links_csv.py --input data/eurlex_test_links.csv --output data/eurlex_test_links.jsonl
+```
+
 - Downloader:
 
 ```bash
@@ -79,6 +93,7 @@ eurlex-download "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_2
 - `python3 parse_eu.py ...`
 - `python3 test_coverage.py ...`
 - `python3 run_batch.py ...`
+- `python3 convert_links_csv.py ...`
 - `python3 download_eurlex.py ...`
 
 ## Public API
@@ -155,6 +170,12 @@ Batch pass criteria used by `eurlex-batch` / `run_batch.py`:
 - `ordering_ok == true`
 - non-vacuous parse
 
+Batch CLI supports:
+
+- `--links-file` for custom JSONL corpus path
+- `--offset` and `--limit` for processing in fixed-size batches
+- `--snapshot-tag` to persist per-batch report snapshots under `reports/batches/`
+
 ## Repository Layout
 
 ```text
@@ -172,6 +193,7 @@ Batch pass criteria used by `eurlex-batch` / `run_batch.py`:
 ├── parse_eu.py                   # legacy wrapper + re-exports
 ├── test_coverage.py              # legacy wrapper + re-exports
 ├── run_batch.py                  # legacy wrapper + re-exports
+├── convert_links_csv.py          # CSV -> JSONL links converter wrapper
 ├── download_eurlex.py            # legacy wrapper + re-exports
 └── tests/                        # regression + compatibility tests
 ```
