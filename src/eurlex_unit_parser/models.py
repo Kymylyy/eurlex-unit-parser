@@ -5,6 +5,24 @@ from typing import Optional
 
 
 @dataclass
+class Citation:
+    """Represents a citation extracted from a unit text."""
+
+    raw_text: str
+    citation_type: str  # "internal" | "eu_legislation"
+    span_start: int
+    span_end: int
+    article: Optional[int] = None
+    paragraph: Optional[int] = None
+    point: Optional[str] = None
+    article_range: tuple[int, int] | None = None
+    target_node_id: Optional[str] = None
+    act_type: Optional[str] = None  # "regulation" | "directive" | "decision"
+    act_number: Optional[str] = None
+    celex: Optional[str] = None
+
+
+@dataclass
 class Unit:
     """Represents a single parsed unit (recital, article, paragraph, point, etc.)."""
 
@@ -41,6 +59,7 @@ class Unit:
     is_stem: bool = False
     word_count: int = 0
     char_count: int = 0
+    citations: list[Citation] = field(default_factory=list)
 
 
 @dataclass

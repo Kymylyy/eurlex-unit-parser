@@ -1,4 +1,5 @@
 """Regression tests for amending article parsing on the hardest CELEX documents."""
+from dataclasses import asdict
 import json
 import tempfile
 from pathlib import Path
@@ -36,12 +37,12 @@ def _parse_and_test(celex: str):
 
     parser = EUParser(str(html_path))
     units = parser.parse(html_content)
-    units_data = [u.__dict__ for u in units]
+    units_data = [asdict(u) for u in units]
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
         json.dump(
             {
-                "document_metadata": parser.document_metadata.__dict__ if parser.document_metadata else None,
+                "document_metadata": asdict(parser.document_metadata) if parser.document_metadata else None,
                 "units": units_data,
             },
             f,
@@ -144,7 +145,7 @@ def test_dora_footnote_citation_not_parsed_as_amendment_text():
 
     parser = EUParser(str(html_path))
     units = parser.parse(html_content)
-    units_data = [u.__dict__ for u in units]
+    units_data = [asdict(u) for u in units]
 
     soup = BeautifulSoup(html_content, "lxml")
     html_footnotes = 0

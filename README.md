@@ -101,7 +101,7 @@ eurlex-download "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_2
 ### New package imports
 
 ```python
-from eurlex_unit_parser import EUParser, Unit, ValidationReport
+from eurlex_unit_parser import Citation, EUParser, Unit, ValidationReport
 ```
 
 ### Legacy imports (still supported)
@@ -117,6 +117,8 @@ Each JSON output is an object:
 
 - `document_metadata`: document-level summary metadata
 - `units`: flat array of parsed units
+
+Each `unit` now includes a `citations` list (possibly empty) populated during enrichment.
 
 Breaking change: legacy root-list JSON is no longer supported by coverage/batch tools.
 
@@ -154,7 +156,23 @@ Example:
       "is_leaf": true,
       "is_stem": false,
       "word_count": 10,
-      "char_count": 61
+      "char_count": 61,
+      "citations": [
+        {
+          "raw_text": "Article 6(1) of Regulation (EU) 2016/679",
+          "citation_type": "eu_legislation",
+          "span_start": 0,
+          "span_end": 40,
+          "article": 6,
+          "paragraph": 1,
+          "point": null,
+          "article_range": null,
+          "target_node_id": "art-6.par-1",
+          "act_type": "regulation",
+          "act_number": "2016/679",
+          "celex": "32016R0679"
+        }
+      ]
     }
   ]
 }
