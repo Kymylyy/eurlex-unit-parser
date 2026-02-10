@@ -27,6 +27,12 @@ With dev tooling:
 python3 -m pip install -e .[dev]
 ```
 
+If console scripts are not on your `PATH`, run them via module mode:
+
+```bash
+PYTHONPATH=src python3 -m eurlex_unit_parser.cli.parse --help
+```
+
 Optional downloader dependency:
 
 ```bash
