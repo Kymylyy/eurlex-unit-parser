@@ -21,6 +21,7 @@ class EnrichmentMixin:
         self._compute_text_stats()
         self._compute_document_metadata()
         self._extract_citations()
+        self._resolve_citations()
 
     def _build_parent_index(self) -> None:
         self._unit_map: dict[str, Unit] = {u.id: u for u in self.units}

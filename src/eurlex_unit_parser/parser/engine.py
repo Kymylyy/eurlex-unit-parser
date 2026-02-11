@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 from eurlex_unit_parser.models import Unit
 from eurlex_unit_parser.parser.annex import AnnexParserMixin
 from eurlex_unit_parser.parser.citations import CitationExtractorMixin
+from eurlex_unit_parser.parser.citation_resolver import CitationResolverMixin
 from eurlex_unit_parser.parser.consolidated import ConsolidatedParserMixin
 from eurlex_unit_parser.parser.enrichment import EnrichmentMixin
 from eurlex_unit_parser.parser.oj import OJParserMixin
@@ -22,6 +23,7 @@ class EUParser(
     TablesParserMixin,
     ValidationMixin,
     CitationExtractorMixin,
+    CitationResolverMixin,
     EnrichmentMixin,
     ParserStateMixin,
 ):

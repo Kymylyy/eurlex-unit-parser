@@ -198,6 +198,17 @@ class CitationExtractorMixin:
         re.IGNORECASE,
     )
 
+    _INTERNAL_ARTICLE_OR: Pattern[str] = re.compile(
+        r"""
+        \bArticle\s+(?P<article1>\d+[a-z]?)
+        (?:\s?\((?P<paragraph1>\d+)\))?
+        \s+or\s+(?:Article\s+)?(?P<article2>\d+[a-z]?)
+        (?:\s?\((?P<paragraph2>\d+)\))?
+        (?=[^\w]|$)
+        """,
+        re.IGNORECASE | re.VERBOSE,
+    )
+
     _INTERNAL_ARTICLE_MULTI_PARAGRAPH: Pattern[str] = re.compile(
         r"""\bArticle\s+(?P<article>\d+[a-z]?)\s*\((?P<paragraph>\d+)\)\s+and\s+\((?P<paragraph_second>\d+)\)(?=[^\w]|$)""",
         re.IGNORECASE,
@@ -218,9 +229,51 @@ class CitationExtractorMixin:
         re.IGNORECASE,
     )
 
+    _INTERNAL_PARAGRAPH_ENUMERATION: Pattern[str] = re.compile(
+        r"""\bparagraphs\s+(?P<enum_body>\d+(?:\s*,\s*\d+)*\s*(?:,\s*)?(?:and|or)\s+\d+)\b""",
+        re.IGNORECASE,
+    )
+
+    _INTERNAL_PARAGRAPH_OF_THIS_ARTICLE: Pattern[str] = re.compile(
+        r"""\bparagraph\s+(?P<paragraph>\d+)\s+of\s+this\s+Article\b""",
+        re.IGNORECASE,
+    )
+
     _INTERNAL_PARAGRAPH_SIMPLE: Pattern[str] = re.compile(
         r"""\bparagraph\s+(?P<paragraph>\d+)\b""",
         re.IGNORECASE,
+    )
+
+    _INTERNAL_POINT_ENUMERATION: Pattern[str] = re.compile(
+        r"""
+        \bpoints\s+
+        (?P<enum_body>
+            \([a-z0-9]+\)
+            (?:\s*,\s*\([a-z0-9]+\))*
+            \s*(?:,\s*)?(?:and|or)\s+\([a-z0-9]+\)
+        )
+        """,
+        re.IGNORECASE | re.VERBOSE,
+    )
+
+    _INTERNAL_POINT_OF_SUBPARAGRAPH: Pattern[str] = re.compile(
+        r"""
+        \bpoint\s+\((?P<point>[a-z0-9]+)\)\s+of\s+
+        the\s+(?P<ordinal>first|second|third|fourth|fifth)\s+subparagraph
+        (?:\s+of\s+paragraph\s+(?P<paragraph>\d+))?
+        (?:\s+of\s+this\s+Article)?
+        (?=[^\w]|$)
+        """,
+        re.IGNORECASE | re.VERBOSE,
+    )
+
+    _INTERNAL_SUBPARAGRAPH_COMMA_POINT: Pattern[str] = re.compile(
+        r"""
+        \bthe\s+(?P<ordinal>first|second|third|fourth|fifth)\s+subparagraph
+        \s*,\s*point\s+\((?P<point>[a-z0-9]+)\)
+        (?=[^\w]|$)
+        """,
+        re.IGNORECASE | re.VERBOSE,
     )
 
     _INTERNAL_SUBPARAGRAPH_PAIR_THIS_PARAGRAPH: Pattern[str] = re.compile(
@@ -246,6 +299,16 @@ class CitationExtractorMixin:
         \bthe\s+(?P<ordinal>first|second|third|fourth|fifth)\s+subparagraph
         \s+of\s+Article\s+(?P<article>\d+[a-z]?)
         (?:\s?\((?P<paragraph>\d+)\))?\b
+        """,
+        re.IGNORECASE | re.VERBOSE,
+    )
+
+    _INTERNAL_SUBPARAGRAPH_OF_PARAGRAPH: Pattern[str] = re.compile(
+        r"""
+        \bthe\s+(?P<ordinal>first|second|third|fourth|fifth)\s+subparagraph
+        \s+of\s+paragraph\s+(?P<paragraph>\d+)
+        (?:\s+of\s+this\s+Article)?
+        (?=[^\w]|$)
         """,
         re.IGNORECASE | re.VERBOSE,
     )
@@ -311,14 +374,21 @@ class CitationExtractorMixin:
             (self._TREATY_CHARTER, self._build_treaty_charter),
             (self._TREATY_LONG_GENERIC, self._build_treaty_generic),
             (self._TREATY_PROTOCOL, self._build_treaty_protocol),
+            (self._INTERNAL_POINT_OF_SUBPARAGRAPH, self._build_internal_point_of_subparagraph),
+            (self._INTERNAL_SUBPARAGRAPH_COMMA_POINT, self._build_internal_subparagraph_comma_point),
+            (self._INTERNAL_SUBPARAGRAPH_OF_PARAGRAPH, self._build_internal_subparagraph_of_paragraph),
             (self._INTERNAL_ARTICLE_POINT_RANGE_ARTICLE_FIRST, self._build_internal_article_point_range),
             (self._INTERNAL_ARTICLE_POINT_RANGE_POINT_FIRST, self._build_internal_article_point_range),
             (self._INTERNAL_ARTICLE_POINT, self._build_internal_article_point),
             (self._INTERNAL_POINT_OF_ARTICLE, self._build_internal_article_point),
             (self._INTERNAL_ARTICLE_RANGE, self._build_internal_article_range),
             (self._INTERNAL_ARTICLE_ENUMERATION, self._build_internal_article_enumeration),
+            (self._INTERNAL_ARTICLE_OR, self._build_internal_article_or),
             (self._INTERNAL_ARTICLE_MULTI_PARAGRAPH, self._build_internal_article_multi_paragraph),
             (self._INTERNAL_ARTICLE_SIMPLE, self._build_internal_article_simple),
+            (self._INTERNAL_POINT_ENUMERATION, self._build_internal_point_enumeration),
+            (self._INTERNAL_PARAGRAPH_ENUMERATION, self._build_internal_paragraph_enumeration),
+            (self._INTERNAL_PARAGRAPH_OF_THIS_ARTICLE, self._build_internal_paragraph_of_this_article),
             (self._INTERNAL_PARAGRAPH_RANGE, self._build_internal_paragraph_range),
             (self._INTERNAL_PARAGRAPH_SIMPLE, self._build_internal_paragraph_simple),
             (self._INTERNAL_SUBPARAGRAPH_PAIR_THIS_PARAGRAPH, self._build_internal_subparagraph_pair),
@@ -590,6 +660,39 @@ class CitationExtractorMixin:
             )
         return citations
 
+    def _build_internal_article_or(self, match: Match[str], text: str) -> list[Citation]:
+        span_start, span_end = match.span()
+        citations: list[Citation] = []
+
+        article_tokens = [
+            (match.groupdict().get("article1"), match.groupdict().get("paragraph1")),
+            (match.groupdict().get("article2"), match.groupdict().get("paragraph2")),
+        ]
+        for article_token, paragraph_token in article_tokens:
+            article, article_label = self._parse_article(article_token)
+            if article_label is None:
+                continue
+            paragraph = self._parse_int(paragraph_token)
+            citations.append(
+                Citation(
+                    raw_text=text[span_start:span_end],
+                    citation_type="internal",
+                    span_start=span_start,
+                    span_end=span_end,
+                    article=article,
+                    article_label=article_label,
+                    paragraph=paragraph,
+                    target_node_id=self._to_node_id(
+                        article_label=article_label,
+                        paragraph=paragraph,
+                        point=None,
+                        subparagraph=None,
+                    ),
+                )
+            )
+
+        return citations
+
     def _build_internal_article_multi_paragraph(self, match: Match[str], text: str) -> list[Citation]:
         span_start, span_end = match.span()
         article, article_label = self._parse_article(match.group("article"))
@@ -637,6 +740,64 @@ class CitationExtractorMixin:
             target_node_id=self._to_node_id(article_label=article_label, paragraph=paragraph, point=point),
         )
 
+    def _build_internal_point_enumeration(self, match: Match[str], text: str) -> list[Citation]:
+        span_start, span_end = match.span()
+        enum_body = match.group("enum_body") or ""
+        points = re.findall(r"\(([a-z0-9]+)\)", enum_body)
+
+        citations: list[Citation] = []
+        for point_token in points:
+            point = self._normalize_point(point_token)
+            if point is None:
+                continue
+            citations.append(
+                Citation(
+                    raw_text=text[span_start:span_end],
+                    citation_type="internal",
+                    span_start=span_start,
+                    span_end=span_end,
+                    point=point,
+                    target_node_id=self._to_node_id(article_label=None, paragraph=None, point=point),
+                )
+            )
+
+        return citations
+
+    def _build_internal_paragraph_enumeration(self, match: Match[str], text: str) -> list[Citation]:
+        span_start, span_end = match.span()
+        enum_body = match.group("enum_body") or ""
+        paragraphs = [self._parse_int(token) for token in re.findall(r"\d+", enum_body)]
+
+        citations: list[Citation] = []
+        for paragraph in paragraphs:
+            if paragraph is None:
+                continue
+            citations.append(
+                Citation(
+                    raw_text=text[span_start:span_end],
+                    citation_type="internal",
+                    span_start=span_start,
+                    span_end=span_end,
+                    paragraph=paragraph,
+                    target_node_id=self._to_node_id(article_label=None, paragraph=paragraph, point=None),
+                )
+            )
+
+        return citations
+
+    def _build_internal_paragraph_of_this_article(self, match: Match[str], text: str) -> Citation:
+        span_start, span_end = match.span()
+        paragraph = self._parse_int(match.group("paragraph"))
+
+        return Citation(
+            raw_text=text[span_start:span_end],
+            citation_type="internal",
+            span_start=span_start,
+            span_end=span_end,
+            paragraph=paragraph,
+            target_node_id=self._to_node_id(article_label=None, paragraph=paragraph, point=None),
+        )
+
     def _build_internal_paragraph_range(self, match: Match[str], text: str) -> Citation:
         span_start, span_end = match.span()
 
@@ -667,6 +828,68 @@ class CitationExtractorMixin:
             span_end=span_end,
             paragraph=paragraph,
             target_node_id=self._to_node_id(article_label=None, paragraph=paragraph, point=None),
+        )
+
+    def _build_internal_point_of_subparagraph(self, match: Match[str], text: str) -> Citation:
+        span_start, span_end = match.span()
+        point = self._normalize_point(match.groupdict().get("point"))
+        paragraph = self._parse_int(match.groupdict().get("paragraph"))
+        ordinal = self._normalize_ordinal(match.groupdict().get("ordinal"))
+
+        return Citation(
+            raw_text=text[span_start:span_end],
+            citation_type="internal",
+            span_start=span_start,
+            span_end=span_end,
+            paragraph=paragraph,
+            point=point,
+            subparagraph_ordinal=ordinal,
+            target_node_id=self._to_node_id(
+                article_label=None,
+                paragraph=paragraph,
+                point=point,
+                subparagraph=ordinal,
+            ),
+        )
+
+    def _build_internal_subparagraph_comma_point(self, match: Match[str], text: str) -> Citation:
+        span_start, span_end = match.span()
+        point = self._normalize_point(match.groupdict().get("point"))
+        ordinal = self._normalize_ordinal(match.groupdict().get("ordinal"))
+
+        return Citation(
+            raw_text=text[span_start:span_end],
+            citation_type="internal",
+            span_start=span_start,
+            span_end=span_end,
+            point=point,
+            subparagraph_ordinal=ordinal,
+            target_node_id=self._to_node_id(
+                article_label=None,
+                paragraph=None,
+                point=point,
+                subparagraph=ordinal,
+            ),
+        )
+
+    def _build_internal_subparagraph_of_paragraph(self, match: Match[str], text: str) -> Citation:
+        span_start, span_end = match.span()
+        paragraph = self._parse_int(match.groupdict().get("paragraph"))
+        ordinal = self._normalize_ordinal(match.groupdict().get("ordinal"))
+
+        return Citation(
+            raw_text=text[span_start:span_end],
+            citation_type="internal",
+            span_start=span_start,
+            span_end=span_end,
+            paragraph=paragraph,
+            subparagraph_ordinal=ordinal,
+            target_node_id=self._to_node_id(
+                article_label=None,
+                paragraph=paragraph,
+                point=None,
+                subparagraph=ordinal,
+            ),
         )
 
     def _build_internal_subparagraph_pair(self, match: Match[str], text: str) -> list[Citation]:
