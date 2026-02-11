@@ -111,18 +111,67 @@ from parse_eu import EUParser
 from parse_eu import remove_note_tags, normalize_text, strip_leading_label, is_list_table, get_cell_text
 ```
 
-## Output Format
+## JSON Contract
 
-Each JSON output is an object:
+Parser output (`eurlex-parse`) is a JSON object:
 
-- `document_metadata`: document-level summary metadata
-- `units`: flat array of parsed units
+- `document_metadata`: document-level summary and aggregate counters.
+- `units`: flat array of parsed units in document order.
 
-Each `unit` now includes a `citations` list (possibly empty) populated during enrichment.
+Validation output (`--validation`) is a separate JSON object described by `ValidationReport`.
+
+Each `unit` includes a `citations` list (possibly empty) populated during enrichment.
 Structural index fields include `paragraph_index` and `subparagraph_index` (both optional, 1-based when present).
-Citation extraction now supports v0.2 patterns and optional metadata fields:
+Citation extraction supports v0.2 patterns and optional metadata fields:
 `article_label`, `point_range`, `paragraph_range`, `subparagraph_ordinal`, `chapter`,
 `section`, `title_ref`, `annex`, `annex_part`, `treaty_code`, `connective_phrase`, `act_year`.
+
+Formal JSON Schema artifacts (Draft 2020-12):
+
+- `schemas/eurlex-output.schema.json`
+- `schemas/eurlex-validation.schema.json`
+
+Regenerate artifacts:
+
+```bash
+python3 scripts/generate_json_schemas.py
+```
+
+Check that committed schemas are synchronized with models:
+
+```bash
+python3 scripts/generate_json_schemas.py --check
+```
+
+Key `Unit` fields:
+
+| Field | Meaning |
+|---|---|
+| `id` | Stable hierarchical identifier, e.g. `art-5.par-1.pt-a`. |
+| `type` | Structural unit kind (`article`, `paragraph`, `point`, `annex_item`, `nested_N`, etc.). |
+| `ref` | Raw source label, e.g. `1.` or `(a)` when available. |
+| `text` | Normalized unit text. |
+| `parent_id` | Parent unit id or `null` for top-level units. |
+| `article_number` / `paragraph_number` | Explicit legal numbering when present. |
+| `paragraph_index` | Positional fallback when paragraph has no explicit number. |
+| `point_label` / `subpoint_label` / `subsubpoint_label` | Normalized list labels for nested points. |
+| `target_path` | Enriched canonical pointer (e.g. `Art. 5(1)(a)`, `Annex I`). |
+| `article_heading` | Article heading propagated to descendants during enrichment. |
+| `children_count`, `is_leaf`, `is_stem` | Tree structure metadata. |
+| `word_count`, `char_count` | Text statistics for downstream processing. |
+| `citations` | Extracted citation objects in text order (possibly empty). |
+
+Key `Citation` fields:
+
+| Field | Meaning |
+|---|---|
+| `raw_text` | Exact citation substring in unit text. |
+| `citation_type` | `internal` (within current act) or `eu_legislation` (external EU act). |
+| `span_start`, `span_end` | Character offsets of citation in unit text (`start` inclusive, `end` exclusive). |
+| `article`, `paragraph`, `point` | Parsed structural targets when detected. |
+| `article_range` | Inclusive `(start, end)` article range for references like `Articles X to Y`. |
+| `target_node_id` | Best-effort resolved unit id for internal references. |
+| `act_type`, `act_number`, `celex` | External act metadata for `eu_legislation` citations. |
 
 Breaking change: legacy root-list JSON is no longer supported by coverage/batch tools.
 
@@ -130,7 +179,7 @@ Canonical example in repo:
 
 - `examples/DORA.json` (Regulation (EU) 2022/2554, DORA)
 
-Example:
+Example parser output:
 
 ```json
 {

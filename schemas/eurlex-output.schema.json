@@ -1,0 +1,562 @@
+{
+  "$defs": {
+    "Citation": {
+      "additionalProperties": false,
+      "description": "Represents one reference mention extracted from a unit's text.",
+      "properties": {
+        "act_number": {
+          "description": "External act number in slash notation, e.g. `2016/679`.",
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "act_type": {
+          "anyOf": [
+            {
+              "enum": [
+                "regulation",
+                "directive",
+                "decision"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Normalized external act type for `eu_legislation` references."
+        },
+        "act_year": {
+          "description": "Extracted year of an external EU act when available.",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "annex": {
+          "description": "Referenced annex label, e.g. `I`.",
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "annex_part": {
+          "description": "Referenced annex part label, e.g. `A`.",
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "article": {
+          "description": "Referenced article number if present.",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "article_label": {
+          "description": "Raw article label when alphanumeric (e.g. `6a`) cannot be represented as integer.",
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "article_range": {
+          "description": "Inclusive article interval `(start, end)` when a range is detected.",
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "integer"
+            }
+          ],
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "celex": {
+          "description": "Derived CELEX identifier for recognized external EU acts.",
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "chapter": {
+          "description": "Referenced chapter label if present.",
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "citation_type": {
+          "description": "Citation family: internal cross-reference or external EU act reference.",
+          "enum": [
+            "internal",
+            "eu_legislation"
+          ],
+          "type": "string"
+        },
+        "connective_phrase": {
+          "description": "Leading connective phrase associated with the citation, if extracted.",
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "paragraph": {
+          "description": "Referenced paragraph number if present.",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "paragraph_range": {
+          "description": "Inclusive paragraph interval `(start, end)` when a range is detected.",
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "integer"
+            }
+          ],
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "point": {
+          "description": "Referenced point label, e.g. `a`.",
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "point_range": {
+          "description": "Inclusive point interval `(start, end)` for references such as `points (a) to (d)`.",
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "raw_text": {
+          "description": "Exact citation substring as it appears in `Unit.text`.",
+          "type": "string"
+        },
+        "section": {
+          "description": "Referenced section label if present.",
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "span_end": {
+          "description": "Exclusive character offset of citation end within `Unit.text`.",
+          "type": "integer"
+        },
+        "span_start": {
+          "description": "Inclusive character offset of citation start within `Unit.text`.",
+          "type": "integer"
+        },
+        "subparagraph_ordinal": {
+          "description": "Ordinal marker for subparagraph references, e.g. `first`, `second`.",
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "target_node_id": {
+          "description": "Best-effort target unit identifier resolved from citation components.",
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "title_ref": {
+          "description": "Referenced title label if present.",
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "treaty_code": {
+          "anyOf": [
+            {
+              "enum": [
+                "TFEU",
+                "TEU",
+                "CHARTER",
+                "TREATY_GENERIC",
+                "PROTOCOL"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Normalized treaty identifier for treaty references."
+        }
+      },
+      "required": [
+        "raw_text",
+        "citation_type",
+        "span_start",
+        "span_end",
+        "article",
+        "article_label",
+        "paragraph",
+        "point",
+        "point_range",
+        "article_range",
+        "paragraph_range",
+        "subparagraph_ordinal",
+        "chapter",
+        "section",
+        "title_ref",
+        "annex",
+        "annex_part",
+        "treaty_code",
+        "connective_phrase",
+        "target_node_id",
+        "act_year",
+        "act_type",
+        "act_number",
+        "celex"
+      ],
+      "title": "Citation",
+      "type": "object"
+    },
+    "DocumentMetadata": {
+      "additionalProperties": false,
+      "description": "Document-level aggregate metadata computed from the final parsed unit list.",
+      "properties": {
+        "amendment_articles": {
+          "description": "Article numbers identified as amendatory articles.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "has_annexes": {
+          "description": "True when at least one annex unit exists.",
+          "type": "boolean"
+        },
+        "title": {
+          "description": "Detected legal act title text.",
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "total_articles": {
+          "description": "Count of units with `type == article`.",
+          "type": "integer"
+        },
+        "total_definitions": {
+          "description": "Count of definition points inferred from article headings.",
+          "type": "integer"
+        },
+        "total_paragraphs": {
+          "description": "Count of units with `type == paragraph`.",
+          "type": "integer"
+        },
+        "total_points": {
+          "description": "Count of units with `type == point`.",
+          "type": "integer"
+        },
+        "total_units": {
+          "description": "Total number of units in `units`.",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "title",
+        "total_units",
+        "total_articles",
+        "total_paragraphs",
+        "total_points",
+        "total_definitions",
+        "has_annexes",
+        "amendment_articles"
+      ],
+      "title": "DocumentMetadata",
+      "type": "object"
+    },
+    "Unit": {
+      "additionalProperties": false,
+      "description": "Represents one parsed structural unit (title, recital, article, paragraph, point, annex item).",
+      "properties": {
+        "annex_number": {
+          "description": "Annex identifier for annex-related units, e.g. `I`.",
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "annex_part": {
+          "description": "Annex part label for annex descendants, e.g. `A`.",
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "article_heading": {
+          "description": "Inherited article heading propagated during post-parse enrichment.",
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "article_number": {
+          "description": "Owning article number for article descendants.",
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "char_count": {
+          "description": "Character count of normalized `text`.",
+          "type": "integer"
+        },
+        "children_count": {
+          "description": "Number of direct child units.",
+          "type": "integer"
+        },
+        "citations": {
+          "description": "Deterministically extracted citation objects in text order.",
+          "items": {
+            "$ref": "#/$defs/Citation"
+          },
+          "type": "array"
+        },
+        "extra_labels": {
+          "description": "Extra normalized labels for deeply nested point structures (`nested_N`).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "heading": {
+          "description": "Heading/subtitle text for article or annex-level units.",
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "id": {
+          "description": "Stable hierarchical unit identifier, e.g. `art-5.par-1.pt-a`.",
+          "type": "string"
+        },
+        "is_amendment_text": {
+          "description": "Whether the text belongs to amendatory language rather than normative body text.",
+          "type": "boolean"
+        },
+        "is_leaf": {
+          "description": "True when `children_count == 0`.",
+          "type": "boolean"
+        },
+        "is_stem": {
+          "description": "True for units ending with `:` and having child units.",
+          "type": "boolean"
+        },
+        "paragraph_index": {
+          "description": "1-based positional paragraph index when no explicit paragraph number exists.",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "paragraph_number": {
+          "description": "Explicit paragraph number if present in legal text.",
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "parent_id": {
+          "description": "Parent unit identifier; null for root-level units.",
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "point_label": {
+          "description": "Normalized label of a `point` unit.",
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "recital_number": {
+          "description": "Recital ordinal number for recital units.",
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "ref": {
+          "description": "Original label text from source markup, e.g. `1.` or `(a)`.",
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "source_file": {
+          "description": "Path to source HTML file used for parsing.",
+          "type": "string"
+        },
+        "source_id": {
+          "description": "Original EUR-Lex element identifier from HTML, if present.",
+          "type": "string"
+        },
+        "source_xpath": {
+          "description": "Optional source XPath for diagnostics and traceability.",
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "subparagraph_index": {
+          "description": "1-based positional index of subparagraph within the parent paragraph.",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "subpoint_label": {
+          "description": "Normalized label of a `subpoint` unit.",
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "subsubpoint_label": {
+          "description": "Normalized label of a `subsubpoint` unit.",
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "target_path": {
+          "description": "Computed canonical path label (e.g. `Art. 5(1)(a)` or `Annex I`).",
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "text": {
+          "description": "Normalized textual content for this unit.",
+          "type": "string"
+        },
+        "type": {
+          "anyOf": [
+            {
+              "enum": [
+                "document_title",
+                "recital",
+                "article",
+                "paragraph",
+                "subparagraph",
+                "intro",
+                "point",
+                "subpoint",
+                "subsubpoint",
+                "annex",
+                "annex_part",
+                "annex_item",
+                "unknown_unit"
+              ]
+            },
+            {
+              "pattern": "^nested_[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "description": "Unit kind emitted by the parser."
+        },
+        "word_count": {
+          "description": "Token count of `text` split by whitespace.",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "ref",
+        "text",
+        "parent_id",
+        "source_id",
+        "source_file",
+        "article_number",
+        "paragraph_number",
+        "paragraph_index",
+        "subparagraph_index",
+        "point_label",
+        "subpoint_label",
+        "subsubpoint_label",
+        "extra_labels",
+        "heading",
+        "annex_number",
+        "annex_part",
+        "recital_number",
+        "is_amendment_text",
+        "source_xpath",
+        "target_path",
+        "article_heading",
+        "children_count",
+        "is_leaf",
+        "is_stem",
+        "word_count",
+        "char_count",
+        "citations"
+      ],
+      "title": "Unit",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "JSON contract emitted by `eurlex-parse`.",
+  "properties": {
+    "document_metadata": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/DocumentMetadata"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Document-level summary metadata computed from parsed units."
+    },
+    "units": {
+      "description": "Flat array of parsed legal units.",
+      "items": {
+        "$ref": "#/$defs/Unit"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "document_metadata",
+    "units"
+  ],
+  "title": "EUR-Lex Parser Output",
+  "type": "object"
+}
