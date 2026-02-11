@@ -1,78 +1,210 @@
 """Core data models for parsed legal units and validation reports."""
 
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import MISSING, dataclass, field
+from typing import Any, Optional
+
+
+def schema_field(
+    description: str,
+    *,
+    default: Any = MISSING,
+    default_factory: Any = MISSING,
+    json_schema: dict[str, Any] | None = None,
+) -> Any:
+    """Create a dataclass field with reusable JSON Schema metadata."""
+
+    metadata: dict[str, Any] = {"description": description}
+    if json_schema is not None:
+        metadata["json_schema"] = json_schema
+
+    kwargs: dict[str, Any] = {"metadata": metadata}
+    if default is not MISSING:
+        kwargs["default"] = default
+    if default_factory is not MISSING:
+        kwargs["default_factory"] = default_factory
+    return field(**kwargs)
 
 
 @dataclass
 class Citation:
-    """Represents a citation extracted from a unit text."""
+    """Represents one reference mention extracted from a unit's text."""
 
-    raw_text: str
-    citation_type: str  # "internal" | "eu_legislation"
-    span_start: int
-    span_end: int
-    article: Optional[int] = None
-    paragraph: Optional[int] = None
-    point: Optional[str] = None
-    article_range: tuple[int, int] | None = None
-    target_node_id: Optional[str] = None
-    act_type: Optional[str] = None  # "regulation" | "directive" | "decision"
-    act_number: Optional[str] = None
-    celex: Optional[str] = None
+    raw_text: str = schema_field("Exact citation substring as it appears in `Unit.text`.")
+    citation_type: str = schema_field(
+        "Citation family: internal cross-reference or external EU act reference.",
+        json_schema={"enum": ["internal", "eu_legislation"]},
+    )
+    span_start: int = schema_field("Inclusive character offset of citation start within `Unit.text`.")
+    span_end: int = schema_field("Exclusive character offset of citation end within `Unit.text`.")
+    article: Optional[int] = schema_field(default=None, description="Referenced article number if present.")
+    paragraph: Optional[int] = schema_field(
+        default=None, description="Referenced paragraph number if present."
+    )
+    point: Optional[str] = schema_field(default=None, description="Referenced point label, e.g. `a`.")
+    article_range: tuple[int, int] | None = schema_field(
+        default=None,
+        description="Inclusive article interval `(start, end)` when a range is detected.",
+    )
+    target_node_id: Optional[str] = schema_field(
+        default=None,
+        description="Best-effort target unit identifier resolved from citation components.",
+    )
+    act_type: Optional[str] = schema_field(
+        default=None,
+        description="Normalized external act type for `eu_legislation` references.",
+        json_schema={
+            "anyOf": [
+                {"enum": ["regulation", "directive", "decision"]},
+                {"type": "null"},
+            ]
+        },
+    )
+    act_number: Optional[str] = schema_field(
+        default=None,
+        description="External act number in slash notation, e.g. `2016/679`.",
+    )
+    celex: Optional[str] = schema_field(
+        default=None,
+        description="Derived CELEX identifier for recognized external EU acts.",
+    )
 
 
 @dataclass
 class Unit:
-    """Represents a single parsed unit (recital, article, paragraph, point, etc.)."""
+    """Represents one parsed structural unit (title, recital, article, paragraph, point, annex item)."""
 
-    id: str
-    type: str
-    ref: Optional[str]
-    text: str
-    parent_id: Optional[str]
-    source_id: str
-    source_file: str
+    id: str = schema_field("Stable hierarchical unit identifier, e.g. `art-5.par-1.pt-a`.")
+    type: str = schema_field(
+        "Unit kind emitted by the parser.",
+        json_schema={
+            "anyOf": [
+                {
+                    "enum": [
+                        "document_title",
+                        "recital",
+                        "article",
+                        "paragraph",
+                        "subparagraph",
+                        "intro",
+                        "point",
+                        "subpoint",
+                        "subsubpoint",
+                        "annex",
+                        "annex_part",
+                        "annex_item",
+                        "unknown_unit",
+                    ]
+                },
+                {"type": "string", "pattern": "^nested_[0-9]+$"},
+            ]
+        },
+    )
+    ref: Optional[str] = schema_field(
+        description="Original label text from source markup, e.g. `1.` or `(a)`."
+    )
+    text: str = schema_field("Normalized textual content for this unit.")
+    parent_id: Optional[str] = schema_field(
+        description="Parent unit identifier; null for root-level units."
+    )
+    source_id: str = schema_field("Original EUR-Lex element identifier from HTML, if present.")
+    source_file: str = schema_field("Path to source HTML file used for parsing.")
 
-    article_number: Optional[str] = None
-    paragraph_number: Optional[str] = None
-    paragraph_index: Optional[int] = None
-    point_label: Optional[str] = None
-    subpoint_label: Optional[str] = None
-    subsubpoint_label: Optional[str] = None
-    extra_labels: list = field(default_factory=list)
+    article_number: Optional[str] = schema_field(
+        default=None, description="Owning article number for article descendants."
+    )
+    paragraph_number: Optional[str] = schema_field(
+        default=None, description="Explicit paragraph number if present in legal text."
+    )
+    paragraph_index: Optional[int] = schema_field(
+        default=None,
+        description="1-based positional paragraph index when no explicit paragraph number exists.",
+    )
+    point_label: Optional[str] = schema_field(default=None, description="Normalized label of a `point` unit.")
+    subpoint_label: Optional[str] = schema_field(
+        default=None, description="Normalized label of a `subpoint` unit."
+    )
+    subsubpoint_label: Optional[str] = schema_field(
+        default=None, description="Normalized label of a `subsubpoint` unit."
+    )
+    extra_labels: list[str] = schema_field(
+        default_factory=list,
+        description="Extra normalized labels for deeply nested point structures (`nested_N`).",
+    )
 
-    heading: Optional[str] = None
-    annex_number: Optional[str] = None
-    annex_part: Optional[str] = None
-    recital_number: Optional[str] = None
+    heading: Optional[str] = schema_field(
+        default=None, description="Heading/subtitle text for article or annex-level units."
+    )
+    annex_number: Optional[str] = schema_field(
+        default=None, description="Annex identifier for annex-related units, e.g. `I`."
+    )
+    annex_part: Optional[str] = schema_field(
+        default=None, description="Annex part label for annex descendants, e.g. `A`."
+    )
+    recital_number: Optional[str] = schema_field(
+        default=None, description="Recital ordinal number for recital units."
+    )
 
-    is_amendment_text: bool = False
+    is_amendment_text: bool = schema_field(
+        default=False,
+        description="Whether the text belongs to amendatory language rather than normative body text.",
+    )
 
-    source_xpath: Optional[str] = None
+    source_xpath: Optional[str] = schema_field(
+        default=None,
+        description="Optional source XPath for diagnostics and traceability.",
+    )
 
-    # Post-parse enrichment fields
-    target_path: Optional[str] = None
-    article_heading: Optional[str] = None
-    children_count: int = 0
-    is_leaf: bool = True
-    is_stem: bool = False
-    word_count: int = 0
-    char_count: int = 0
-    citations: list[Citation] = field(default_factory=list)
+    target_path: Optional[str] = schema_field(
+        default=None,
+        description="Computed canonical path label (e.g. `Art. 5(1)(a)` or `Annex I`).",
+    )
+    article_heading: Optional[str] = schema_field(
+        default=None,
+        description="Inherited article heading propagated during post-parse enrichment.",
+    )
+    children_count: int = schema_field(default=0, description="Number of direct child units.")
+    is_leaf: bool = schema_field(default=True, description="True when `children_count == 0`.")
+    is_stem: bool = schema_field(
+        default=False,
+        description="True for units ending with `:` and having child units.",
+    )
+    word_count: int = schema_field(default=0, description="Token count of `text` split by whitespace.")
+    char_count: int = schema_field(default=0, description="Character count of normalized `text`.")
+    citations: list[Citation] = schema_field(
+        default_factory=list,
+        description="Deterministically extracted citation objects in text order.",
+    )
 
 
 @dataclass
 class ValidationReport:
-    """Validation report for a parsed file."""
+    """Validation report describing parser integrity checks for one source file."""
 
-    source_file: str
-    counts_expected: dict = field(default_factory=dict)
-    counts_parsed: dict = field(default_factory=dict)
-    sequence_gaps: list = field(default_factory=list)
-    orphans: list = field(default_factory=list)
-    unparsed_nodes: list = field(default_factory=list)
-    mismatched_labels: list = field(default_factory=list)
+    source_file: str = schema_field("Path of HTML file that produced this report.")
+    counts_expected: dict[str, int] = schema_field(
+        default_factory=dict,
+        description="Expected structural counts inferred from source HTML markers.",
+    )
+    counts_parsed: dict[str, int] = schema_field(
+        default_factory=dict,
+        description="Actual counts by parsed unit type.",
+    )
+    sequence_gaps: list[dict[str, object]] = schema_field(
+        default_factory=list,
+        description="Detected sequence gaps (e.g. missing recital numbers).",
+    )
+    orphans: list[dict[str, object]] = schema_field(
+        default_factory=list,
+        description="Units whose `parent_id` does not resolve to an existing unit.",
+    )
+    unparsed_nodes: list[dict[str, object]] = schema_field(
+        default_factory=list,
+        description="Source nodes that were expected but not parsed into units.",
+    )
+    mismatched_labels: list[dict[str, object]] = schema_field(
+        default_factory=list,
+        description="Label mismatches discovered during validation checks.",
+    )
 
     def is_valid(self) -> bool:
         return (
@@ -85,13 +217,19 @@ class ValidationReport:
 
 @dataclass
 class DocumentMetadata:
-    """Document-level metadata computed from parsed units."""
+    """Document-level aggregate metadata computed from the final parsed unit list."""
 
-    title: Optional[str] = None
-    total_units: int = 0
-    total_articles: int = 0
-    total_paragraphs: int = 0
-    total_points: int = 0
-    total_definitions: int = 0
-    has_annexes: bool = False
-    amendment_articles: list[str] = field(default_factory=list)
+    title: Optional[str] = schema_field(default=None, description="Detected legal act title text.")
+    total_units: int = schema_field(default=0, description="Total number of units in `units`.")
+    total_articles: int = schema_field(default=0, description="Count of units with `type == article`.")
+    total_paragraphs: int = schema_field(default=0, description="Count of units with `type == paragraph`.")
+    total_points: int = schema_field(default=0, description="Count of units with `type == point`.")
+    total_definitions: int = schema_field(
+        default=0,
+        description="Count of definition points inferred from article headings.",
+    )
+    has_annexes: bool = schema_field(default=False, description="True when at least one annex unit exists.")
+    amendment_articles: list[str] = schema_field(
+        default_factory=list,
+        description="Article numbers identified as amendatory articles.",
+    )

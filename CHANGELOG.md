@@ -7,6 +7,13 @@ The format is based on Keep a Changelog and this project uses Semantic Versionin
 ## [Unreleased]
 
 ### Added
+- Formal JSON Schema artifacts (Draft 2020-12):
+  - `schemas/eurlex-output.schema.json` for parser output payloads,
+  - `schemas/eurlex-validation.schema.json` for validation report payloads.
+- Schema generator CLI (`scripts/generate_json_schemas.py`) with deterministic output and `--check` mode.
+- Schema synchronization regression tests:
+  - `tests/test_json_schema_sync.py` (artifact drift guard),
+  - `tests/test_json_schema_contract.py` (schema contract validation).
 - Citation extraction enrichment (`Unit.citations`) for v0.1 EU reference patterns
   (internal references and EU legislation references).
 - `Citation` model exported in package and legacy wrapper APIs.

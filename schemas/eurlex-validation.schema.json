@@ -1,0 +1,137 @@
+{
+  "$defs": {
+    "ValidationReport": {
+      "additionalProperties": false,
+      "description": "Validation report describing parser integrity checks for one source file.",
+      "properties": {
+        "counts_expected": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "description": "Expected structural counts inferred from source HTML markers.",
+          "type": "object"
+        },
+        "counts_parsed": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "description": "Actual counts by parsed unit type.",
+          "type": "object"
+        },
+        "mismatched_labels": {
+          "description": "Label mismatches discovered during validation checks.",
+          "items": {
+            "additionalProperties": {},
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "orphans": {
+          "description": "Units whose `parent_id` does not resolve to an existing unit.",
+          "items": {
+            "additionalProperties": {},
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "sequence_gaps": {
+          "description": "Detected sequence gaps (e.g. missing recital numbers).",
+          "items": {
+            "additionalProperties": {},
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "source_file": {
+          "description": "Path of HTML file that produced this report.",
+          "type": "string"
+        },
+        "unparsed_nodes": {
+          "description": "Source nodes that were expected but not parsed into units.",
+          "items": {
+            "additionalProperties": {},
+            "type": "object"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "source_file",
+        "counts_expected",
+        "counts_parsed",
+        "sequence_gaps",
+        "orphans",
+        "unparsed_nodes",
+        "mismatched_labels"
+      ],
+      "title": "ValidationReport",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Validation report describing parser integrity checks for one source file.",
+  "properties": {
+    "counts_expected": {
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "description": "Expected structural counts inferred from source HTML markers.",
+      "type": "object"
+    },
+    "counts_parsed": {
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "description": "Actual counts by parsed unit type.",
+      "type": "object"
+    },
+    "mismatched_labels": {
+      "description": "Label mismatches discovered during validation checks.",
+      "items": {
+        "additionalProperties": {},
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "orphans": {
+      "description": "Units whose `parent_id` does not resolve to an existing unit.",
+      "items": {
+        "additionalProperties": {},
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "sequence_gaps": {
+      "description": "Detected sequence gaps (e.g. missing recital numbers).",
+      "items": {
+        "additionalProperties": {},
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "source_file": {
+      "description": "Path of HTML file that produced this report.",
+      "type": "string"
+    },
+    "unparsed_nodes": {
+      "description": "Source nodes that were expected but not parsed into units.",
+      "items": {
+        "additionalProperties": {},
+        "type": "object"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "source_file",
+    "counts_expected",
+    "counts_parsed",
+    "sequence_gaps",
+    "orphans",
+    "unparsed_nodes",
+    "mismatched_labels"
+  ],
+  "title": "ValidationReport",
+  "type": "object"
+}
