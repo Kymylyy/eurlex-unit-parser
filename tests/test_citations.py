@@ -31,10 +31,13 @@ def _run_enrichment(units: list[Unit]) -> EUParser:
 
 
 def test_internal_simple_article_paragraph() -> None:
-    units = [_make_unit("u1", "paragraph", text="as referred to in Article 6(1).")]
+    units = [
+        _make_unit("art-6.par-1", "paragraph", article_number="6", paragraph_number="1", text="Reference node."),
+        _make_unit("u1", "paragraph", text="as referred to in Article 6(1)."),
+    ]
     _run_enrichment(units)
 
-    citations = units[0].citations
+    citations = units[1].citations
     assert len(citations) == 1
     assert citations[0].citation_type == "internal"
     assert citations[0].article == 6
@@ -44,10 +47,20 @@ def test_internal_simple_article_paragraph() -> None:
 
 
 def test_internal_article_first_point() -> None:
-    units = [_make_unit("u1", "paragraph", text="See Article 2(1), point (b).")]
+    units = [
+        _make_unit(
+            "art-2.par-1.pt-b",
+            "point",
+            article_number="2",
+            paragraph_number="1",
+            point_label="b",
+            text="Reference node.",
+        ),
+        _make_unit("u1", "paragraph", text="See Article 2(1), point (b)."),
+    ]
     _run_enrichment(units)
 
-    citations = units[0].citations
+    citations = units[1].citations
     assert len(citations) == 1
     assert citations[0].citation_type == "internal"
     assert citations[0].article == 2
@@ -58,10 +71,20 @@ def test_internal_article_first_point() -> None:
 
 
 def test_internal_point_first() -> None:
-    units = [_make_unit("u1", "paragraph", text="as set out in point (b) of Article 2(1).")]
+    units = [
+        _make_unit(
+            "art-2.par-1.pt-b",
+            "point",
+            article_number="2",
+            paragraph_number="1",
+            point_label="b",
+            text="Reference node.",
+        ),
+        _make_unit("u1", "paragraph", text="as set out in point (b) of Article 2(1)."),
+    ]
     _run_enrichment(units)
 
-    citations = units[0].citations
+    citations = units[1].citations
     assert len(citations) == 1
     assert citations[0].citation_type == "internal"
     assert citations[0].article == 2
@@ -216,10 +239,13 @@ def test_article_range() -> None:
 
 
 def test_paragraph_reference() -> None:
-    units = [_make_unit("u1", "paragraph", text="as referred to in paragraph 3.")]
+    units = [
+        _make_unit("par-3", "paragraph", paragraph_number="3", text="Reference node."),
+        _make_unit("u1", "paragraph", text="as referred to in paragraph 3."),
+    ]
     _run_enrichment(units)
 
-    citations = units[0].citations
+    citations = units[1].citations
     assert len(citations) == 1
     assert citations[0].citation_type == "internal"
     assert citations[0].paragraph == 3
@@ -248,10 +274,13 @@ def test_external_point_first_keeps_point() -> None:
 
 
 def test_internal_article_with_letter_suffix() -> None:
-    units = [_make_unit("u1", "paragraph", text="as referred to in Article 6a(1).")]
+    units = [
+        _make_unit("art-6a.par-1", "paragraph", article_number="6a", paragraph_number="1", text="Reference node."),
+        _make_unit("u1", "paragraph", text="as referred to in Article 6a(1)."),
+    ]
     _run_enrichment(units)
 
-    citations = units[0].citations
+    citations = units[1].citations
     assert len(citations) == 1
     assert citations[0].citation_type == "internal"
     assert citations[0].article == 6
@@ -471,10 +500,14 @@ def test_internal_article_enumeration_with_suffix() -> None:
 
 
 def test_internal_article_multi_paragraph() -> None:
-    units = [_make_unit("u1", "paragraph", text="as set out in Article 12(5) and (7).")]
+    units = [
+        _make_unit("art-12.par-5", "paragraph", article_number="12", paragraph_number="5", text="P5"),
+        _make_unit("art-12.par-7", "paragraph", article_number="12", paragraph_number="7", text="P7"),
+        _make_unit("u1", "paragraph", text="as set out in Article 12(5) and (7)."),
+    ]
     _run_enrichment(units)
 
-    citations = units[0].citations
+    citations = units[2].citations
     assert len(citations) == 2
     paragraphs = sorted(c.paragraph for c in citations)
     assert paragraphs == [5, 7]

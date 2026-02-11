@@ -170,10 +170,12 @@ Key `Citation` fields:
 | `span_start`, `span_end` | Character offsets of citation in unit text (`start` inclusive, `end` exclusive). |
 | `article`, `paragraph`, `point` | Parsed structural targets when detected. |
 | `article_range` | Inclusive `(start, end)` article range for references like `Articles X to Y`. |
-| `target_node_id` | Best-effort resolved unit id for internal references. |
+| `target_node_id` | Resolved internal unit id only when present in the current document tree; otherwise `null`. |
 | `act_type`, `act_number`, `celex` | External act metadata for `eu_legislation` citations. |
 
 Breaking change: legacy root-list JSON is no longer supported by coverage/batch tools.
+
+Citation note: a single phrase may intentionally emit multiple citation objects when it references multiple targets (for example `Articles 13 and 14`).
 
 Canonical example in repo:
 
