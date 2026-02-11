@@ -49,6 +49,7 @@ class Unit:
     article_number: Optional[str] = None
     paragraph_number: Optional[str] = None
     paragraph_index: Optional[int] = None
+    subparagraph_index: Optional[int] = None
     point_label: Optional[str] = None
     subpoint_label: Optional[str] = None
     subsubpoint_label: Optional[str] = None

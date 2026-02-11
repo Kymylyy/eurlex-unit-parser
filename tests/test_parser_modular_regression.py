@@ -35,6 +35,26 @@ def test_oj_paragraph_and_point_structure() -> None:
     assert by_id["art-1.par-1.pt-a"]["parent_id"] == "art-1.par-1"
 
 
+def test_oj_subparagraphs_have_sequential_subparagraph_index() -> None:
+    html = """
+    <html><body>
+      <div class="eli-subdivision" id="art_1">
+        <p class="oj-ti-art">Article 1</p>
+        <div id="001.001">
+          <p class="oj-normal">1. Intro text.</p>
+          <p class="oj-normal">Second sentence as first subparagraph.</p>
+          <p class="oj-normal">Third sentence as second subparagraph.</p>
+        </div>
+      </div>
+    </body></html>
+    """
+    units = _parse(html)
+    by_id = {u["id"]: u for u in units}
+
+    assert by_id["art-1.par-1.subpar-1"]["subparagraph_index"] == 1
+    assert by_id["art-1.par-1.subpar-2"]["subparagraph_index"] == 2
+
+
 def test_consolidated_paragraph_and_grid_point() -> None:
     html = """
     <html><body>
@@ -85,6 +105,49 @@ def test_amending_article_marks_units_as_amendment_text() -> None:
     assert len(point_units) == 1
     assert point_units[0]["is_amendment_text"] is True
     assert "Replacement text" in point_units[0]["text"]
+
+
+def test_amending_subparagraphs_have_sequential_subparagraph_index() -> None:
+    html = """
+    <html><body>
+      <div class="eli-subdivision" id="art_4">
+        <p class="oj-ti-art">Article 4</p>
+        <p class="oj-normal">This Regulation is amended as follows:</p>
+        <p class="oj-normal">Second amendment paragraph with substantial text.</p>
+        <p class="oj-normal">Third amendment paragraph with substantial text.</p>
+      </div>
+    </body></html>
+    """
+    units = _parse(html)
+    by_id = {u["id"]: u for u in units}
+
+    assert by_id["art-4.par-1.subpar-1"]["subparagraph_index"] == 1
+    assert by_id["art-4.par-1.subpar-2"]["subparagraph_index"] == 2
+
+
+def test_non_list_table_subparagraphs_have_subparagraph_index() -> None:
+    html = """
+    <html><body>
+      <div class="eli-subdivision" id="art_5">
+        <p class="oj-ti-art">Article 5</p>
+        <div id="001.001">
+          <p class="oj-normal">1. Intro text.</p>
+          <table>
+            <tbody>
+              <tr>
+                <td><p>Subparagraph extracted from non-list table content.</p></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </body></html>
+    """
+    units = _parse(html)
+    by_id = {u["id"]: u for u in units}
+
+    assert by_id["art-5.par-1.tbl-1"]["type"] == "subparagraph"
+    assert by_id["art-5.par-1.tbl-1"]["subparagraph_index"] == 1
 
 
 def test_annex_part_and_item_structure() -> None:

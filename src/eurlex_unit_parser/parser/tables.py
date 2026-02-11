@@ -81,6 +81,7 @@ class TablesParserMixin:
                             source_file=self.source_file,
                             article_number=article_num,
                             paragraph_number=paragraph_num,
+                            subparagraph_index=sub_idx if child_type == "subparagraph" else None,
                             is_amendment_text=is_amendment,
                         )
                     )

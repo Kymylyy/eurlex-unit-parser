@@ -37,6 +37,7 @@ The format is based on Keep a Changelog and this project uses Semantic Versionin
   `is_leaf`, `is_stem`, `word_count`, `char_count`).
 - New `DocumentMetadata` model computed from parsed units.
 - Enrichment regression tests covering structural and document-level metadata.
+- `Unit.subparagraph_index` optional metadata (1-based) for all parsed `subparagraph` units.
 - CSV -> JSONL converter for candidate EUR-Lex link sets (`convert_links_csv.py` and
   `src/eurlex_unit_parser/batch/links_convert.py`).
 - Batch runner support for processing custom corpora in windows:
@@ -53,6 +54,8 @@ The format is based on Keep a Changelog and this project uses Semantic Versionin
 - Internal article parsing now preserves alphanumeric labels (e.g. `6a`) via
   `Citation.article_label` while keeping `Citation.article` for compatibility.
 - Parser enrichment pipeline now runs citation extraction and includes `citations` in JSON output.
+- Parser flows now populate `subparagraph_index` wherever `subparagraph` ordering is known
+  (including standard OJ subparagraphs, amending paths, and non-list table extraction).
 - Improved amending article parsing path to preserve structure and point extraction.
 - Improved list-table detection fallback heuristic.
 - Batch reporting updated to use machine-readable metrics.

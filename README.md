@@ -119,6 +119,7 @@ Each JSON output is an object:
 - `units`: flat array of parsed units
 
 Each `unit` now includes a `citations` list (possibly empty) populated during enrichment.
+Structural index fields include `paragraph_index` and `subparagraph_index` (both optional, 1-based when present).
 Citation extraction now supports v0.2 patterns and optional metadata fields:
 `article_label`, `point_range`, `paragraph_range`, `subparagraph_ordinal`, `chapter`,
 `section`, `title_ref`, `annex`, `annex_part`, `treaty_code`, `connective_phrase`, `act_year`.
@@ -154,6 +155,7 @@ Example:
       "source_file": "downloads/eur-lex/32022R2554.html",
       "article_number": "5",
       "paragraph_number": "2",
+      "subparagraph_index": 1,
       "point_label": null,
       "target_path": "Art. 5(2)",
       "article_heading": "Governance and organisation",
