@@ -69,7 +69,9 @@ class CitationExtractorMixin:
 
     _EXTERNAL_WITH_ARTICLE_POINT_FIRST: Pattern[str] = re.compile(
         rf"""
-        \bpoint\s+\((?P<point>[a-z0-9]+)\)\s+of\s+Article\s+(?P<article>\d+[a-z]?)
+        \bpoint\s+\((?P<point>[a-z0-9]+)\)\s+of\s+
+        (?:the\s+(?P<subparagraph>first|second|third|fourth|fifth)\s+subparagraph\s+of\s+)?
+        Article\s+(?P<article>\d+[a-z]?)
         (?:\s?\((?P<paragraph>\d+)\))?
         (?:\s?\((?P<point_inline>[a-z0-9]+)\))?
         \s+of\s+{_ACT_FRAGMENT}\b
@@ -82,6 +84,7 @@ class CitationExtractorMixin:
         \bArticle\s+(?P<article>\d+[a-z]?)
         (?:\s?\((?P<paragraph>\d+)\))?
         (?:\s?\((?P<point_inline>[a-z0-9]+)\))?
+        (?:\s*,\s*(?P<paragraph_ordinal>first|second|third|fourth|fifth)\s+paragraph)?
         (?:
             ,\s*point\s+\((?P<point_comma>[a-z0-9]+)\)
             |,\s*points\s+\((?P<point_range_start>[a-z0-9]+)\)\s+to\s+\((?P<point_range_end>[a-z0-9]+)\)
@@ -186,12 +189,17 @@ class CitationExtractorMixin:
     )
 
     _INTERNAL_ARTICLE_RANGE: Pattern[str] = re.compile(
-        r"""\bArticles\s+(?P<range_start>\d+)\s+(?:to|and|or)\s+(?P<range_end>\d+)\b""",
+        r"""\bArticles\s+(?P<range_start>\d+)\s+to\s+(?P<range_end>\d+)\b""",
         re.IGNORECASE,
     )
 
     _INTERNAL_ARTICLE_ENUMERATION: Pattern[str] = re.compile(
-        r"""\bArticles\s+(?P<enum_start>\d+)(?:\s*,\s*\d+)+\s*,?\s+and\s+(?P<enum_end>\d+)\b""",
+        r"""\bArticles\s+(?P<enum_body>\d+[a-z]?(?:\s*,\s*\d+[a-z]?)*\s*(?:,\s*)?(?:and|or)\s+\d+[a-z]?)\b""",
+        re.IGNORECASE,
+    )
+
+    _INTERNAL_ARTICLE_MULTI_PARAGRAPH: Pattern[str] = re.compile(
+        r"""\bArticle\s+(?P<article>\d+[a-z]?)\s*\((?P<paragraph>\d+)\)\s+and\s+\((?P<paragraph_second>\d+)\)(?=[^\w]|$)""",
         re.IGNORECASE,
     )
 
@@ -278,7 +286,7 @@ class CitationExtractorMixin:
     )
 
     _RELATIVE_REFERENCE: Pattern[str] = re.compile(
-        r"""\b(?:this|that)\s+(?:Regulation|Directive|Article|paragraph)\b|\bthereof\b""",
+        r"""\b(?:this|that)\s+(?:Regulation|Directive|Decision|Article|paragraph)\b|\bthereof\b""",
         re.IGNORECASE,
     )
 
@@ -308,7 +316,8 @@ class CitationExtractorMixin:
             (self._INTERNAL_ARTICLE_POINT, self._build_internal_article_point),
             (self._INTERNAL_POINT_OF_ARTICLE, self._build_internal_article_point),
             (self._INTERNAL_ARTICLE_RANGE, self._build_internal_article_range),
-            (self._INTERNAL_ARTICLE_ENUMERATION, self._build_internal_article_range),
+            (self._INTERNAL_ARTICLE_ENUMERATION, self._build_internal_article_enumeration),
+            (self._INTERNAL_ARTICLE_MULTI_PARAGRAPH, self._build_internal_article_multi_paragraph),
             (self._INTERNAL_ARTICLE_SIMPLE, self._build_internal_article_simple),
             (self._INTERNAL_PARAGRAPH_RANGE, self._build_internal_paragraph_range),
             (self._INTERNAL_PARAGRAPH_SIMPLE, self._build_internal_paragraph_simple),
@@ -373,6 +382,10 @@ class CitationExtractorMixin:
 
         article, article_label = self._parse_article(match.group("article"))
         paragraph = self._parse_int(match.groupdict().get("paragraph"))
+        subparagraph_ordinal = self._normalize_ordinal(match.groupdict().get("subparagraph"))
+        paragraph_ordinal = self._normalize_ordinal(match.groupdict().get("paragraph_ordinal"))
+        if paragraph is None and paragraph_ordinal:
+            paragraph = self._ordinal_to_int(paragraph_ordinal)
 
         point = self._normalize_point(
             match.groupdict().get("point")
@@ -387,9 +400,12 @@ class CitationExtractorMixin:
         celex = None
         parsed = self._parse_act_year_number(act_part1, act_part2)
         is_framework = bool((match.groupdict().get("framework") or "").strip())
-        if parsed is not None and not is_framework:
+        act_year = None
+        if parsed is not None:
             year, number = parsed
-            celex = self._to_celex(act_type, year, number)
+            act_year = year
+            if not is_framework:
+                celex = self._to_celex(act_type, year, number)
 
         return Citation(
             raw_text=text[span_start:span_end],
@@ -401,7 +417,14 @@ class CitationExtractorMixin:
             paragraph=paragraph,
             point=point,
             point_range=point_range,
-            target_node_id=self._to_node_id(article_label=article_label, paragraph=paragraph, point=point),
+            subparagraph_ordinal=subparagraph_ordinal,
+            target_node_id=self._to_node_id(
+                article_label=article_label,
+                paragraph=paragraph,
+                point=point,
+                subparagraph=subparagraph_ordinal,
+            ),
+            act_year=act_year,
             act_type=act_type,
             act_number=act_number,
             celex=celex,
@@ -421,15 +444,19 @@ class CitationExtractorMixin:
         celex = None
         parsed = self._parse_act_year_number(act_part1, act_part2)
         is_framework = bool((match.groupdict().get("framework") or "").strip())
-        if parsed is not None and not is_framework:
+        act_year = None
+        if parsed is not None:
             year, number = parsed
-            celex = self._to_celex(act_type, year, number)
+            act_year = year
+            if not is_framework:
+                celex = self._to_celex(act_type, year, number)
 
         return Citation(
             raw_text=text[span_start:span_end],
             citation_type="eu_legislation",
             span_start=span_start,
             span_end=span_end,
+            act_year=act_year,
             act_type=act_type,
             act_number=act_number,
             celex=celex,
@@ -536,6 +563,61 @@ class CitationExtractorMixin:
             target_node_id=None,
         )
 
+    def _build_internal_article_enumeration(self, match: Match[str], text: str) -> list[Citation]:
+        span_start, span_end = match.span()
+        enum_body = match.group("enum_body") or ""
+        tokens = re.findall(r"\d+[a-z]?", enum_body)
+        citations: list[Citation] = []
+        for token in tokens:
+            article, article_label = self._parse_article(token)
+            if article_label is None:
+                continue
+            citations.append(
+                Citation(
+                    raw_text=text[span_start:span_end],
+                    citation_type="internal",
+                    span_start=span_start,
+                    span_end=span_end,
+                    article=article,
+                    article_label=article_label,
+                    target_node_id=self._to_node_id(
+                        article_label=article_label,
+                        paragraph=None,
+                        point=None,
+                        subparagraph=None,
+                    ),
+                )
+            )
+        return citations
+
+    def _build_internal_article_multi_paragraph(self, match: Match[str], text: str) -> list[Citation]:
+        span_start, span_end = match.span()
+        article, article_label = self._parse_article(match.group("article"))
+        first_paragraph = self._parse_int(match.group("paragraph"))
+        second_paragraph = self._parse_int(match.group("paragraph_second"))
+        citations: list[Citation] = []
+        for paragraph in [first_paragraph, second_paragraph]:
+            if paragraph is None:
+                continue
+            citations.append(
+                Citation(
+                    raw_text=text[span_start:span_end],
+                    citation_type="internal",
+                    span_start=span_start,
+                    span_end=span_end,
+                    article=article,
+                    article_label=article_label,
+                    paragraph=paragraph,
+                    target_node_id=self._to_node_id(
+                        article_label=article_label,
+                        paragraph=paragraph,
+                        point=None,
+                        subparagraph=None,
+                    ),
+                )
+            )
+        return citations
+
     def _build_internal_article_simple(self, match: Match[str], text: str) -> Citation:
         span_start, span_end = match.span()
 
@@ -631,7 +713,12 @@ class CitationExtractorMixin:
             article_label=article_label,
             paragraph=paragraph,
             subparagraph_ordinal=ordinal,
-            target_node_id=self._to_node_id(article_label=article_label, paragraph=paragraph, point=None),
+            target_node_id=self._to_node_id(
+                article_label=article_label,
+                paragraph=paragraph,
+                point=None,
+                subparagraph=ordinal,
+            ),
         )
 
     def _build_internal_chapter_section_title(self, match: Match[str], text: str) -> Citation:
@@ -685,7 +772,13 @@ class CitationExtractorMixin:
                     span_start=span_start,
                     span_end=span_end,
                     annex=first_annex.upper(),
-                    target_node_id=None,
+                    target_node_id=self._to_node_id(
+                        article_label=None,
+                        paragraph=None,
+                        point=None,
+                        subparagraph=None,
+                        annex=first_annex.upper(),
+                    ),
                 ),
                 Citation(
                     raw_text=text[span_start:span_end],
@@ -693,9 +786,36 @@ class CitationExtractorMixin:
                     span_start=span_start,
                     span_end=span_end,
                     annex=second_annex.upper(),
-                    target_node_id=None,
+                    target_node_id=self._to_node_id(
+                        article_label=None,
+                        paragraph=None,
+                        point=None,
+                        subparagraph=None,
+                        annex=second_annex.upper(),
+                    ),
                 ),
             ]
+
+        target_node_id: str | None
+        if section_letter and not part:
+            target_node_id = None
+        elif part:
+            target_node_id = self._to_node_id(
+                article_label=None,
+                paragraph=None,
+                point=None,
+                subparagraph=None,
+                annex=annex,
+                annex_part=part,
+            )
+        else:
+            target_node_id = self._to_node_id(
+                article_label=None,
+                paragraph=None,
+                point=None,
+                subparagraph=None,
+                annex=annex,
+            )
 
         return Citation(
             raw_text=text[span_start:span_end],
@@ -705,7 +825,7 @@ class CitationExtractorMixin:
             annex=annex,
             annex_part=part,
             section=section_letter,
-            target_node_id=None,
+            target_node_id=target_node_id,
         )
 
     def _build_relative_reference(self, match: Match[str], text: str) -> Citation:
@@ -800,6 +920,12 @@ class CitationExtractorMixin:
             return "decision"
         return None
 
+    @classmethod
+    def _ordinal_to_int(cls, value: str) -> int | None:
+        mapping = {"first": 1, "second": 2, "third": 3, "fourth": 4, "fifth": 5}
+        normalized = value.strip().lower()
+        return mapping.get(normalized)
+
     @staticmethod
     def _parse_act_year_number(part1: str, part2: str) -> tuple[int, int] | None:
         p1 = int(part1)
@@ -825,13 +951,29 @@ class CitationExtractorMixin:
             return None
         return f"3{year:04d}{type_code}{number:04d}"
 
-    @staticmethod
-    def _to_node_id(article_label: str | None, paragraph: int | None, point: str | None) -> str | None:
+    @classmethod
+    def _to_node_id(
+        cls,
+        article_label: str | None,
+        paragraph: int | None,
+        point: str | None,
+        subparagraph: str | None = None,
+        annex: str | None = None,
+        annex_part: str | None = None,
+    ) -> str | None:
         parts: list[str] = []
         if article_label is not None:
             parts.append(f"art-{article_label}")
         if paragraph is not None:
             parts.append(f"par-{paragraph}")
+        if subparagraph and paragraph is not None:
+            subparagraph_index = cls._ordinal_to_int(subparagraph)
+            if subparagraph_index is not None:
+                parts.append(f"subpar-{subparagraph_index}")
         if point:
             parts.append(f"pt-{point}")
+        if annex:
+            parts.append(f"annex-{annex}")
+        if annex_part:
+            parts.append(f"part-{annex_part}")
         return ".".join(parts) if parts else None

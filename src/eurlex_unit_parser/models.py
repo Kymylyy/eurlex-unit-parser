@@ -28,6 +28,7 @@ class Citation:
     treaty_code: Optional[str] = None  # "TFEU" | "TEU" | "CHARTER" | "TREATY_GENERIC" | "PROTOCOL"
     connective_phrase: Optional[str] = None
     target_node_id: Optional[str] = None
+    act_year: Optional[int] = None
     act_type: Optional[str] = None  # "regulation" | "directive" | "decision"
     act_number: Optional[str] = None
     celex: Optional[str] = None
