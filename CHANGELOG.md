@@ -26,6 +26,8 @@ The format is based on Keep a Changelog and this project uses Semantic Versionin
   `article_label`, `point_range`, `paragraph_range`, `subparagraph_ordinal`,
   `chapter`, `section`, `title_ref`, `annex`, `annex_part`, `treaty_code`,
   `connective_phrase`.
+- `Citation.subparagraph_index` optional metadata (1-based) derived from
+  `Citation.subparagraph_ordinal` for explicit subparagraph references.
 - Regression coverage for v0.1 gaps:
   - external point-first citations preserving `point`,
   - internal `Article 6a(1)` detection and `art-6a...` node mapping.

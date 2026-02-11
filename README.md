@@ -123,7 +123,7 @@ Validation output (`--validation`) is a separate JSON object described by `Valid
 Each `unit` includes a `citations` list (possibly empty) populated during enrichment.
 Structural index fields include `paragraph_index` and `subparagraph_index` (both optional, 1-based when present).
 Citation extraction supports v0.2 patterns and optional metadata fields:
-`article_label`, `point_range`, `paragraph_range`, `subparagraph_ordinal`, `chapter`,
+`article_label`, `point_range`, `paragraph_range`, `subparagraph_ordinal`, `subparagraph_index`, `chapter`,
 `section`, `title_ref`, `annex`, `annex_part`, `treaty_code`, `connective_phrase`, `act_year`.
 
 Formal JSON Schema artifacts (Draft 2020-12):
@@ -168,7 +168,7 @@ Key `Citation` fields:
 | `raw_text` | Exact citation substring in unit text. |
 | `citation_type` | `internal` (within current act) or `eu_legislation` (external EU act). |
 | `span_start`, `span_end` | Character offsets of citation in unit text (`start` inclusive, `end` exclusive). |
-| `article`, `paragraph`, `point` | Parsed structural targets when detected. |
+| `article`, `paragraph`, `point`, `subparagraph_ordinal`, `subparagraph_index` | Parsed structural targets when detected (`subparagraph_index` is 1-based when resolvable). |
 | `article_range` | Inclusive `(start, end)` article range for references like `Articles X to Y`. |
 | `target_node_id` | Resolved internal unit id only when present in the current document tree; otherwise `null`. |
 | `act_type`, `act_number`, `celex` | External act metadata for `eu_legislation` citations. |
@@ -229,6 +229,7 @@ Example parser output:
           "article_range": null,
           "paragraph_range": null,
           "subparagraph_ordinal": "first",
+          "subparagraph_index": 1,
           "chapter": null,
           "section": null,
           "title_ref": null,

@@ -14,6 +14,7 @@ class CitationResolverMixin:
                 self._resolve_relative_citation(citation, unit)
 
     def _resolve_relative_citation(self, citation: Citation, unit: Unit) -> None:
+        self._sync_subparagraph_index(citation)
         if citation.citation_type != "internal":
             return
 
@@ -156,6 +157,11 @@ class CitationResolverMixin:
 
         citation.target_node_id = None
 
+    def _sync_subparagraph_index(self, citation: Citation) -> None:
+        if citation.subparagraph_ordinal is None:
+            citation.subparagraph_index = None
+            return
+        citation.subparagraph_index = self._ordinal_to_int(citation.subparagraph_ordinal)
     def _target_exists(self, target_node_id: str | None) -> bool:
         if target_node_id is None:
             return False

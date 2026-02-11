@@ -112,6 +112,7 @@ def test_context_resolver_first_subparagraph_uses_eu_shift() -> None:
     assert citations[0].article_label == "5"
     assert citations[0].paragraph == 2
     assert citations[0].subparagraph_ordinal == "first"
+    assert citations[0].subparagraph_index == 1
     assert citations[0].target_node_id == "art-5.par-2"
 
 
