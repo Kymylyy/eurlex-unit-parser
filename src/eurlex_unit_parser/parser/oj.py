@@ -196,6 +196,7 @@ class OJParserMixin:
                                     source_file=self.source_file,
                                     article_number=article_num,
                                     paragraph_number=par_num,
+                                    subparagraph_index=subpar_idx,
                                 )
                             )
                             current_parent = subpar_id
@@ -246,6 +247,7 @@ class OJParserMixin:
                             source_file=self.source_file,
                             article_number=article_num,
                             paragraph_number=par_num,
+                            subparagraph_index=subpar_idx,
                         )
                         self._add_unit(subpar_unit)
                         current_parent = subpar_id
@@ -298,6 +300,7 @@ class OJParserMixin:
                                         source_file=self.source_file,
                                         article_number=article_num,
                                         paragraph_number=par_num,
+                                        subparagraph_index=subpar_idx,
                                     )
                                 )
                                 current_parent = subpar_id
@@ -391,6 +394,7 @@ class OJParserMixin:
                         source_file=self.source_file,
                         article_number=article_num,
                         paragraph_number=None,
+                        subparagraph_index=subpar_idx,
                     )
                     self._add_unit(subpar_unit)
                     current_parent = subpar_id
@@ -448,6 +452,7 @@ class OJParserMixin:
                                     source_file=self.source_file,
                                     article_number=article_num,
                                     paragraph_number=None,
+                                    subparagraph_index=subpar_idx,
                                 )
                             )
                             current_parent = subpar_id
@@ -504,6 +509,7 @@ class OJParserMixin:
                                     source_file=self.source_file,
                                     article_number=article_num,
                                     is_amendment_text=True,
+                                    subparagraph_index=subpar_idx,
                                 )
                             )
                     continue
@@ -558,6 +564,7 @@ class OJParserMixin:
                                 source_file=self.source_file,
                                 article_number=article_num,
                                 is_amendment_text=True,
+                                subparagraph_index=subpar_idx,
                             )
                         )
                         first_p = False
