@@ -62,6 +62,10 @@ class Citation:
         default=None,
         description="Ordinal marker for subparagraph references, e.g. `first`, `second`.",
     )
+    subparagraph_index: Optional[int] = schema_field(
+        default=None,
+        description="1-based subparagraph index derived from `subparagraph_ordinal` when resolvable.",
+    )
     chapter: Optional[str] = schema_field(default=None, description="Referenced chapter label if present.")
     section: Optional[str] = schema_field(default=None, description="Referenced section label if present.")
     title_ref: Optional[str] = schema_field(default=None, description="Referenced title label if present.")

@@ -596,6 +596,7 @@ def test_internal_point_of_subparagraph_of_paragraph() -> None:
     citation = citations[0]
     assert citation.point == "a"
     assert citation.subparagraph_ordinal == "first"
+    assert citation.subparagraph_index == 1
     assert citation.paragraph == 2
 
 
@@ -615,6 +616,7 @@ def test_internal_subparagraph_comma_point() -> None:
     citations = units[0].citations
     assert len(citations) == 1
     assert citations[0].subparagraph_ordinal == "first"
+    assert citations[0].subparagraph_index == 1
     assert citations[0].point == "a"
 
 
@@ -643,4 +645,5 @@ def test_internal_subparagraph_of_paragraph() -> None:
     citations = units[0].citations
     assert len(citations) == 1
     assert citations[0].subparagraph_ordinal == "second"
+    assert citations[0].subparagraph_index == 2
     assert citations[0].paragraph == 1
