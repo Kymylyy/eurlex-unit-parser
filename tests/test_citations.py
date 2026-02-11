@@ -542,3 +542,72 @@ def test_empty_text_unit_has_no_citations() -> None:
     _run_enrichment(units)
 
     assert units[0].citations == []
+
+
+def test_internal_paragraph_of_this_article_single_match() -> None:
+    units = [_make_unit("u1", "paragraph", text="criteria referred to in paragraph 1 of this Article")]
+    _run_enrichment(units)
+
+    citations = units[0].citations
+    assert len(citations) == 1
+    assert citations[0].raw_text == "paragraph 1 of this Article"
+    assert citations[0].paragraph == 1
+
+
+def test_internal_point_of_subparagraph_of_paragraph() -> None:
+    units = [_make_unit("u1", "paragraph", text="point (a) of the first subparagraph of paragraph 2")]
+    _run_enrichment(units)
+
+    citations = units[0].citations
+    assert len(citations) == 1
+    citation = citations[0]
+    assert citation.point == "a"
+    assert citation.subparagraph_ordinal == "first"
+    assert citation.paragraph == 2
+
+
+def test_internal_point_enumeration() -> None:
+    units = [_make_unit("u1", "paragraph", text="points (a), (b) and (c)")]
+    _run_enrichment(units)
+
+    citations = units[0].citations
+    assert len(citations) == 3
+    assert [citation.point for citation in citations] == ["a", "b", "c"]
+
+
+def test_internal_subparagraph_comma_point() -> None:
+    units = [_make_unit("u1", "paragraph", text="the first subparagraph, point (a)")]
+    _run_enrichment(units)
+
+    citations = units[0].citations
+    assert len(citations) == 1
+    assert citations[0].subparagraph_ordinal == "first"
+    assert citations[0].point == "a"
+
+
+def test_internal_article_or() -> None:
+    units = [_make_unit("u1", "paragraph", text="Article 43 or 44")]
+    _run_enrichment(units)
+
+    citations = units[0].citations
+    assert len(citations) == 2
+    assert [citation.article_label for citation in citations] == ["43", "44"]
+
+
+def test_internal_paragraph_enumeration() -> None:
+    units = [_make_unit("u1", "paragraph", text="paragraphs 1, 2 or 3")]
+    _run_enrichment(units)
+
+    citations = units[0].citations
+    assert len(citations) == 3
+    assert [citation.paragraph for citation in citations] == [1, 2, 3]
+
+
+def test_internal_subparagraph_of_paragraph() -> None:
+    units = [_make_unit("u1", "paragraph", text="the second subparagraph of paragraph 1")]
+    _run_enrichment(units)
+
+    citations = units[0].citations
+    assert len(citations) == 1
+    assert citations[0].subparagraph_ordinal == "second"
+    assert citations[0].paragraph == 1
