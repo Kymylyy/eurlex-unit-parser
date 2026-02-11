@@ -14,6 +14,7 @@ The format is based on Keep a Changelog and this project uses Semantic Versionin
   - annex references,
   - treaty references (`TFEU`, `TEU`, Charter, Protocol),
   - connective phrase annotation metadata.
+- `Citation.act_year` metadata for external EU legislation references.
 - Expanded `Citation` schema fields for v0.2 metadata:
   `article_label`, `point_range`, `paragraph_range`, `subparagraph_ordinal`,
   `chapter`, `section`, `title_ref`, `annex`, `annex_part`, `treaty_code`,
@@ -48,6 +49,7 @@ The format is based on Keep a Changelog and this project uses Semantic Versionin
 ### Changed
 - Citation matcher ordering now prioritizes external point-first references before
   article-first to avoid losing leading `point (...)` segments.
+- Internal article enumerations now emit discrete citations; article ranges are limited to explicit `to` ranges.
 - Internal article parsing now preserves alphanumeric labels (e.g. `6a`) via
   `Citation.article_label` while keeping `Citation.article` for compatibility.
 - Parser enrichment pipeline now runs citation extraction and includes `citations` in JSON output.
