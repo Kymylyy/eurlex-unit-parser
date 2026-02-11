@@ -162,7 +162,6 @@ class CitationResolverMixin:
             citation.subparagraph_index = None
             return
         citation.subparagraph_index = self._ordinal_to_int(citation.subparagraph_ordinal)
-
     def _target_exists(self, target_node_id: str | None) -> bool:
         if target_node_id is None:
             return False
