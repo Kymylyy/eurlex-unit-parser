@@ -80,6 +80,7 @@ def test_external_standalone() -> None:
     assert citations[0].citation_type == "eu_legislation"
     assert citations[0].act_type == "regulation"
     assert citations[0].act_number == "2016/679"
+    assert citations[0].act_year == 2016
     assert citations[0].celex == "32016R0679"
 
 
@@ -101,6 +102,7 @@ def test_external_with_article() -> None:
     assert citations[0].paragraph == 1
     assert citations[0].point == "c"
     assert citations[0].target_node_id == "art-6.par-1.pt-c"
+    assert citations[0].act_year == 2016
     assert citations[0].celex == "32016R0679"
 
 
@@ -113,6 +115,7 @@ def test_external_old_directive_format() -> None:
     assert citations[0].citation_type == "eu_legislation"
     assert citations[0].act_type == "directive"
     assert citations[0].act_number == "95/46"
+    assert citations[0].act_year == 1995
     assert citations[0].celex == "31995L0046"
 
 
@@ -125,6 +128,7 @@ def test_external_old_regulation_no_format() -> None:
     assert citations[0].citation_type == "eu_legislation"
     assert citations[0].act_type == "regulation"
     assert citations[0].act_number == "45/2001"
+    assert citations[0].act_year == 2001
     assert citations[0].celex == "32001R0045"
 
 
@@ -239,6 +243,7 @@ def test_external_point_first_keeps_point() -> None:
     assert citations[0].article_label == "4"
     assert citations[0].paragraph == 1
     assert citations[0].point == "1"
+    assert citations[0].act_year == 2013
     assert citations[0].celex == "32013R0575"
 
 
@@ -350,6 +355,10 @@ def test_external_decision_formats() -> None:
     assert citations[2].celex == "32008D0768"
     assert citations[3].celex is None
     assert citations[3].act_type == "decision"
+    assert citations[0].act_year == 2024
+    assert citations[1].act_year == 1999
+    assert citations[2].act_year == 2008
+    assert citations[3].act_year == 2002
 
 
 def test_treaty_references() -> None:
@@ -396,3 +405,140 @@ def test_connective_phrase_missing_is_none() -> None:
     citations = units[0].citations
     assert len(citations) == 1
     assert citations[0].connective_phrase is None
+
+
+def test_external_paragraph_ordinal() -> None:
+    units = [
+        _make_unit(
+            "u1",
+            "paragraph",
+            text="Article 108, second paragraph, of Directive (EU) 2015/2366.",
+        )
+    ]
+    _run_enrichment(units)
+
+    citations = units[0].citations
+    assert len(citations) == 1
+    assert citations[0].citation_type == "eu_legislation"
+    assert citations[0].article == 108
+    assert citations[0].paragraph == 2
+    assert citations[0].target_node_id == "art-108.par-2"
+    assert citations[0].act_type == "directive"
+    assert citations[0].act_number == "2015/2366"
+    assert citations[0].act_year == 2015
+    assert citations[0].celex == "32015L2366"
+
+
+def test_external_point_first_subparagraph() -> None:
+    units = [
+        _make_unit(
+            "u1",
+            "paragraph",
+            text=(
+                "point (b) of the first subparagraph of Article 36(1) of Regulation (EU) 2016/679."
+            ),
+        )
+    ]
+    _run_enrichment(units)
+
+    citations = units[0].citations
+    assert len(citations) == 1
+    assert citations[0].citation_type == "eu_legislation"
+    assert citations[0].article == 36
+    assert citations[0].paragraph == 1
+    assert citations[0].subparagraph_ordinal == "first"
+    assert citations[0].point == "b"
+    assert citations[0].target_node_id == "art-36.par-1.subpar-1.pt-b"
+    assert citations[0].celex == "32016R0679"
+
+
+def test_internal_article_enumeration() -> None:
+    units = [_make_unit("u1", "paragraph", text="as set out in Articles 3, 5 and 6.")]
+    _run_enrichment(units)
+
+    citations = units[0].citations
+    assert len(citations) == 3
+    assert {c.article_label for c in citations} == {"3", "5", "6"}
+
+
+def test_internal_article_enumeration_with_suffix() -> None:
+    units = [_make_unit("u1", "paragraph", text="as set out in Articles 40a and 41.")]
+    _run_enrichment(units)
+
+    citations = units[0].citations
+    assert len(citations) == 2
+    assert {c.article_label for c in citations} == {"40a", "41"}
+
+
+def test_internal_article_multi_paragraph() -> None:
+    units = [_make_unit("u1", "paragraph", text="as set out in Article 12(5) and (7).")]
+    _run_enrichment(units)
+
+    citations = units[0].citations
+    assert len(citations) == 2
+    paragraphs = sorted(c.paragraph for c in citations)
+    assert paragraphs == [5, 7]
+    assert {c.target_node_id for c in citations} == {"art-12.par-5", "art-12.par-7"}
+
+
+def test_relative_reference_this_decision() -> None:
+    units = [_make_unit("u1", "paragraph", text="as set out in this Decision.")]
+    _run_enrichment(units)
+
+    citations = units[0].citations
+    assert len(citations) == 1
+    assert citations[0].citation_type == "internal"
+    assert citations[0].raw_text == "this Decision"
+
+
+def test_paragraph_range() -> None:
+    units = [_make_unit("u1", "paragraph", text="as referred to in paragraphs 2 to 4.")]
+    _run_enrichment(units)
+
+    citations = units[0].citations
+    assert len(citations) == 1
+    assert citations[0].paragraph_range == (2, 4)
+
+
+def test_external_old_directive_eec_format() -> None:
+    units = [_make_unit("u1", "paragraph", text="as required by Directive 91/250/EEC.")]
+    _run_enrichment(units)
+
+    citations = units[0].citations
+    assert len(citations) == 1
+    assert citations[0].citation_type == "eu_legislation"
+    assert citations[0].act_type == "directive"
+    assert citations[0].act_number == "91/250"
+    assert citations[0].act_year == 1991
+    assert citations[0].celex == "31991L0250"
+
+
+def test_span_offsets_internal_and_external() -> None:
+    units = [
+        _make_unit("u1", "paragraph", text="as set out in Article 6(1)."),
+        _make_unit(
+            "u2",
+            "paragraph",
+            text="Article 6(1) of Regulation (EU) 2016/679 applies.",
+        ),
+    ]
+    _run_enrichment(units)
+
+    internal = units[0].citations[0]
+    internal_start = units[0].text.index("Article 6(1)")
+    internal_end = internal_start + len("Article 6(1)")
+    assert internal.span_start == internal_start
+    assert internal.span_end == internal_end
+
+    external = units[1].citations[0]
+    external_start = units[1].text.index("Article 6(1) of Regulation (EU) 2016/679")
+    external_end = external_start + len("Article 6(1) of Regulation (EU) 2016/679")
+    assert external.span_start == external_start
+    assert external.span_end == external_end
+
+
+def test_empty_text_unit_has_no_citations() -> None:
+    units = [_make_unit("u1", "paragraph", text="")]
+    _run_enrichment(units)
+
+    assert units[0].citations == []
