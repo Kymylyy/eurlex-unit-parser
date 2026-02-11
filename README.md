@@ -121,7 +121,7 @@ Each JSON output is an object:
 Each `unit` now includes a `citations` list (possibly empty) populated during enrichment.
 Citation extraction now supports v0.2 patterns and optional metadata fields:
 `article_label`, `point_range`, `paragraph_range`, `subparagraph_ordinal`, `chapter`,
-`section`, `title_ref`, `annex`, `annex_part`, `treaty_code`, `connective_phrase`.
+`section`, `title_ref`, `annex`, `annex_part`, `treaty_code`, `connective_phrase`, `act_year`.
 
 Breaking change: legacy root-list JSON is no longer supported by coverage/batch tools.
 
@@ -184,6 +184,7 @@ Example:
           "treaty_code": null,
           "connective_phrase": "for the purposes of",
           "target_node_id": null,
+          "act_year": null,
           "act_type": null,
           "act_number": null,
           "celex": null
