@@ -41,10 +41,26 @@ Legacy equivalent remains supported:
 python3 run_batch.py --force-reparse --oracle mirror
 ```
 
+## Canonical Example Refresh
+
+When changing parser behavior, extraction/enrichment logic, output schema, or docs
+that describe parser output, refresh the canonical example JSON before opening a PR:
+
+```bash
+eurlex-parse --input downloads/eur-lex/32022R2554.html --out examples/DORA.json
+```
+
+If `eurlex-parse` is not available on `PATH`, use:
+
+```bash
+PYTHONPATH=src python3 -m eurlex_unit_parser.cli.parse --input downloads/eur-lex/32022R2554.html --out examples/DORA.json
+```
+
 ## Pull Request Rules
 
 - Keep diffs focused and surgical.
 - Add or update tests for behavior changes.
+- Refresh `examples/DORA.json` whenever parser/output behavior changes.
 - Do not commit generated `downloads/` or `out/` artifacts.
 - Do not commit machine-specific absolute paths.
 - Update `README.md` and `CHANGELOG.md` when user-facing behavior changes.
