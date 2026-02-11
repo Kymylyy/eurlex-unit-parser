@@ -26,11 +26,39 @@
           ],
           "description": "Normalized external act type for `eu_legislation` references."
         },
+        "act_year": {
+          "description": "Extracted year of an external EU act when available.",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "annex": {
+          "description": "Referenced annex label, e.g. `I`.",
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "annex_part": {
+          "description": "Referenced annex part label, e.g. `A`.",
+          "type": [
+            "null",
+            "string"
+          ]
+        },
         "article": {
           "description": "Referenced article number if present.",
           "type": [
             "integer",
             "null"
+          ]
+        },
+        "article_label": {
+          "description": "Raw article label when alphanumeric (e.g. `6a`) cannot be represented as integer.",
+          "type": [
+            "null",
+            "string"
           ]
         },
         "article_range": {
@@ -57,6 +85,13 @@
             "string"
           ]
         },
+        "chapter": {
+          "description": "Referenced chapter label if present.",
+          "type": [
+            "null",
+            "string"
+          ]
+        },
         "citation_type": {
           "description": "Citation family: internal cross-reference or external EU act reference.",
           "enum": [
@@ -65,10 +100,34 @@
           ],
           "type": "string"
         },
+        "connective_phrase": {
+          "description": "Leading connective phrase associated with the citation, if extracted.",
+          "type": [
+            "null",
+            "string"
+          ]
+        },
         "paragraph": {
           "description": "Referenced paragraph number if present.",
           "type": [
             "integer",
+            "null"
+          ]
+        },
+        "paragraph_range": {
+          "description": "Inclusive paragraph interval `(start, end)` when a range is detected.",
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "integer"
+            }
+          ],
+          "type": [
+            "array",
             "null"
           ]
         },
@@ -79,9 +138,33 @@
             "string"
           ]
         },
+        "point_range": {
+          "description": "Inclusive point interval `(start, end)` for references such as `points (a) to (d)`.",
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "type": [
+            "array",
+            "null"
+          ]
+        },
         "raw_text": {
           "description": "Exact citation substring as it appears in `Unit.text`.",
           "type": "string"
+        },
+        "section": {
+          "description": "Referenced section label if present.",
+          "type": [
+            "null",
+            "string"
+          ]
         },
         "span_end": {
           "description": "Exclusive character offset of citation end within `Unit.text`.",
@@ -91,12 +174,43 @@
           "description": "Inclusive character offset of citation start within `Unit.text`.",
           "type": "integer"
         },
+        "subparagraph_ordinal": {
+          "description": "Ordinal marker for subparagraph references, e.g. `first`, `second`.",
+          "type": [
+            "null",
+            "string"
+          ]
+        },
         "target_node_id": {
           "description": "Best-effort target unit identifier resolved from citation components.",
           "type": [
             "null",
             "string"
           ]
+        },
+        "title_ref": {
+          "description": "Referenced title label if present.",
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "treaty_code": {
+          "anyOf": [
+            {
+              "enum": [
+                "TFEU",
+                "TEU",
+                "CHARTER",
+                "TREATY_GENERIC",
+                "PROTOCOL"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Normalized treaty identifier for treaty references."
         }
       },
       "required": [
@@ -105,10 +219,22 @@
         "span_start",
         "span_end",
         "article",
+        "article_label",
         "paragraph",
         "point",
+        "point_range",
         "article_range",
+        "paragraph_range",
+        "subparagraph_ordinal",
+        "chapter",
+        "section",
+        "title_ref",
+        "annex",
+        "annex_part",
+        "treaty_code",
+        "connective_phrase",
         "target_node_id",
+        "act_year",
         "act_type",
         "act_number",
         "celex"
@@ -306,6 +432,13 @@
             "string"
           ]
         },
+        "subparagraph_index": {
+          "description": "1-based positional index of subparagraph within the parent paragraph.",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
         "subpoint_label": {
           "description": "Normalized label of a `subpoint` unit.",
           "type": [
@@ -373,6 +506,7 @@
         "article_number",
         "paragraph_number",
         "paragraph_index",
+        "subparagraph_index",
         "point_label",
         "subpoint_label",
         "subsubpoint_label",

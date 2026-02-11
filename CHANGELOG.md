@@ -14,6 +14,21 @@ The format is based on Keep a Changelog and this project uses Semantic Versionin
 - Schema synchronization regression tests:
   - `tests/test_json_schema_sync.py` (artifact drift guard),
   - `tests/test_json_schema_contract.py` (schema contract validation).
+- Citation extraction v0.2 expansion:
+  - internal point ranges (`points (a) to (d)`),
+  - subparagraph references,
+  - chapter/section/title references,
+  - annex references,
+  - treaty references (`TFEU`, `TEU`, Charter, Protocol),
+  - connective phrase annotation metadata.
+- `Citation.act_year` metadata for external EU legislation references.
+- Expanded `Citation` schema fields for v0.2 metadata:
+  `article_label`, `point_range`, `paragraph_range`, `subparagraph_ordinal`,
+  `chapter`, `section`, `title_ref`, `annex`, `annex_part`, `treaty_code`,
+  `connective_phrase`.
+- Regression coverage for v0.1 gaps:
+  - external point-first citations preserving `point`,
+  - internal `Article 6a(1)` detection and `art-6a...` node mapping.
 - Citation extraction enrichment (`Unit.citations`) for v0.1 EU reference patterns
   (internal references and EU legislation references).
 - `Citation` model exported in package and legacy wrapper APIs.
@@ -29,6 +44,7 @@ The format is based on Keep a Changelog and this project uses Semantic Versionin
   `is_leaf`, `is_stem`, `word_count`, `char_count`).
 - New `DocumentMetadata` model computed from parsed units.
 - Enrichment regression tests covering structural and document-level metadata.
+- `Unit.subparagraph_index` optional metadata (1-based) for all parsed `subparagraph` units.
 - CSV -> JSONL converter for candidate EUR-Lex link sets (`convert_links_csv.py` and
   `src/eurlex_unit_parser/batch/links_convert.py`).
 - Batch runner support for processing custom corpora in windows:
@@ -39,7 +55,14 @@ The format is based on Keep a Changelog and this project uses Semantic Versionin
   validated on the extended 70-link corpus.
 
 ### Changed
+- Citation matcher ordering now prioritizes external point-first references before
+  article-first to avoid losing leading `point (...)` segments.
+- Internal article enumerations now emit discrete citations; article ranges are limited to explicit `to` ranges.
+- Internal article parsing now preserves alphanumeric labels (e.g. `6a`) via
+  `Citation.article_label` while keeping `Citation.article` for compatibility.
 - Parser enrichment pipeline now runs citation extraction and includes `citations` in JSON output.
+- Parser flows now populate `subparagraph_index` wherever `subparagraph` ordering is known
+  (including standard OJ subparagraphs, amending paths, and non-list table extraction).
 - Improved amending article parsing path to preserve structure and point extraction.
 - Improved list-table detection fallback heuristic.
 - Batch reporting updated to use machine-readable metrics.

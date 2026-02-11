@@ -37,17 +37,60 @@ class Citation:
     span_start: int = schema_field("Inclusive character offset of citation start within `Unit.text`.")
     span_end: int = schema_field("Exclusive character offset of citation end within `Unit.text`.")
     article: Optional[int] = schema_field(default=None, description="Referenced article number if present.")
+    article_label: Optional[str] = schema_field(
+        default=None,
+        description="Raw article label when alphanumeric (e.g. `6a`) cannot be represented as integer.",
+    )
     paragraph: Optional[int] = schema_field(
-        default=None, description="Referenced paragraph number if present."
+        default=None,
+        description="Referenced paragraph number if present.",
     )
     point: Optional[str] = schema_field(default=None, description="Referenced point label, e.g. `a`.")
+    point_range: tuple[str, str] | None = schema_field(
+        default=None,
+        description="Inclusive point interval `(start, end)` for references such as `points (a) to (d)`.",
+    )
     article_range: tuple[int, int] | None = schema_field(
         default=None,
         description="Inclusive article interval `(start, end)` when a range is detected.",
     )
+    paragraph_range: tuple[int, int] | None = schema_field(
+        default=None,
+        description="Inclusive paragraph interval `(start, end)` when a range is detected.",
+    )
+    subparagraph_ordinal: Optional[str] = schema_field(
+        default=None,
+        description="Ordinal marker for subparagraph references, e.g. `first`, `second`.",
+    )
+    chapter: Optional[str] = schema_field(default=None, description="Referenced chapter label if present.")
+    section: Optional[str] = schema_field(default=None, description="Referenced section label if present.")
+    title_ref: Optional[str] = schema_field(default=None, description="Referenced title label if present.")
+    annex: Optional[str] = schema_field(default=None, description="Referenced annex label, e.g. `I`.")
+    annex_part: Optional[str] = schema_field(
+        default=None,
+        description="Referenced annex part label, e.g. `A`.",
+    )
+    treaty_code: Optional[str] = schema_field(
+        default=None,
+        description="Normalized treaty identifier for treaty references.",
+        json_schema={
+            "anyOf": [
+                {"enum": ["TFEU", "TEU", "CHARTER", "TREATY_GENERIC", "PROTOCOL"]},
+                {"type": "null"},
+            ]
+        },
+    )
+    connective_phrase: Optional[str] = schema_field(
+        default=None,
+        description="Leading connective phrase associated with the citation, if extracted.",
+    )
     target_node_id: Optional[str] = schema_field(
         default=None,
         description="Best-effort target unit identifier resolved from citation components.",
+    )
+    act_year: Optional[int] = schema_field(
+        default=None,
+        description="Extracted year of an external EU act when available.",
     )
     act_type: Optional[str] = schema_field(
         default=None,
@@ -100,31 +143,39 @@ class Unit:
         },
     )
     ref: Optional[str] = schema_field(
-        description="Original label text from source markup, e.g. `1.` or `(a)`."
+        description="Original label text from source markup, e.g. `1.` or `(a)`.",
     )
     text: str = schema_field("Normalized textual content for this unit.")
     parent_id: Optional[str] = schema_field(
-        description="Parent unit identifier; null for root-level units."
+        description="Parent unit identifier; null for root-level units.",
     )
     source_id: str = schema_field("Original EUR-Lex element identifier from HTML, if present.")
     source_file: str = schema_field("Path to source HTML file used for parsing.")
 
     article_number: Optional[str] = schema_field(
-        default=None, description="Owning article number for article descendants."
+        default=None,
+        description="Owning article number for article descendants.",
     )
     paragraph_number: Optional[str] = schema_field(
-        default=None, description="Explicit paragraph number if present in legal text."
+        default=None,
+        description="Explicit paragraph number if present in legal text.",
     )
     paragraph_index: Optional[int] = schema_field(
         default=None,
         description="1-based positional paragraph index when no explicit paragraph number exists.",
     )
+    subparagraph_index: Optional[int] = schema_field(
+        default=None,
+        description="1-based positional index of subparagraph within the parent paragraph.",
+    )
     point_label: Optional[str] = schema_field(default=None, description="Normalized label of a `point` unit.")
     subpoint_label: Optional[str] = schema_field(
-        default=None, description="Normalized label of a `subpoint` unit."
+        default=None,
+        description="Normalized label of a `subpoint` unit.",
     )
     subsubpoint_label: Optional[str] = schema_field(
-        default=None, description="Normalized label of a `subsubpoint` unit."
+        default=None,
+        description="Normalized label of a `subsubpoint` unit.",
     )
     extra_labels: list[str] = schema_field(
         default_factory=list,
@@ -132,16 +183,20 @@ class Unit:
     )
 
     heading: Optional[str] = schema_field(
-        default=None, description="Heading/subtitle text for article or annex-level units."
+        default=None,
+        description="Heading/subtitle text for article or annex-level units.",
     )
     annex_number: Optional[str] = schema_field(
-        default=None, description="Annex identifier for annex-related units, e.g. `I`."
+        default=None,
+        description="Annex identifier for annex-related units, e.g. `I`.",
     )
     annex_part: Optional[str] = schema_field(
-        default=None, description="Annex part label for annex descendants, e.g. `A`."
+        default=None,
+        description="Annex part label for annex descendants, e.g. `A`.",
     )
     recital_number: Optional[str] = schema_field(
-        default=None, description="Recital ordinal number for recital units."
+        default=None,
+        description="Recital ordinal number for recital units.",
     )
 
     is_amendment_text: bool = schema_field(
