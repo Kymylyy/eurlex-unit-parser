@@ -150,6 +150,32 @@ def test_external_with_article_multiple_regulations_plural() -> None:
     assert [citation.celex for citation in citations] == ["32010R1093", "32010R1094", "32010R1095"]
 
 
+def test_external_with_article_range_multiple_regulations_plural() -> None:
+    units = [
+        _make_unit(
+            "u1",
+            "subparagraph",
+            text=(
+                "Power is delegated to the Commission to supplement this Regulation by adopting the "
+                "regulatory technical standards referred to in the first paragraph in accordance with "
+                "Articles 10 to 14 of Regulations (EU) No 1093/2010, (EU) No 1094/2010 and (EU) No 1095/2010."
+            ),
+        )
+    ]
+    _run_enrichment(units)
+
+    citations = units[0].citations
+    assert len(citations) == 4
+    assert citations[0].citation_type == "internal"
+    assert citations[0].raw_text == "this Regulation"
+
+    external_citations = citations[1:]
+    assert all(citation.citation_type == "eu_legislation" for citation in external_citations)
+    assert all(citation.article_range == (10, 14) for citation in external_citations)
+    assert [citation.act_number for citation in external_citations] == ["1093/2010", "1094/2010", "1095/2010"]
+    assert [citation.celex for citation in external_citations] == ["32010R1093", "32010R1094", "32010R1095"]
+
+
 def test_external_old_directive_format() -> None:
     units = [_make_unit("u1", "paragraph", text="as required by Directive 95/46/EC.")]
     _run_enrichment(units)
