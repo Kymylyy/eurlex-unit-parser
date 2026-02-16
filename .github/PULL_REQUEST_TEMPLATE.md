@@ -5,8 +5,9 @@
 
 ## Validation
 
-- [ ] `python3 -m py_compile parse_eu.py test_coverage.py run_batch.py`
-- [ ] `python3 -m pytest -q`
+- [ ] `ruff check .`
+- [ ] `mypy src/eurlex_unit_parser`
+- [ ] `pytest -q`
 - [ ] Benchmark impact reviewed (if parser logic changed)
 
 ## Checklist
