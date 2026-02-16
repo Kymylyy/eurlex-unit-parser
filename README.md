@@ -111,6 +111,19 @@ from parse_eu import EUParser
 from parse_eu import remove_note_tags, normalize_text, strip_leading_label, is_list_table, get_cell_text
 ```
 
+## How it works
+
+`EUParser` composes focused mixins that split parsing responsibilities while preserving a single `parse()` entrypoint.
+
+- `ParserStateMixin` initializes parser state, detects OJ vs consolidated format, tracks expected/parsed counts, and deduplicates unit ids.
+- `OJParserMixin` and `ConsolidatedParserMixin` handle format-specific article/paragraph extraction paths.
+- `TablesParserMixin` extracts nested list-table structures (points/subpoints) and non-list table content.
+- `AnnexParserMixin` parses annex containers into annex, annex-part, and annex-item units.
+- `ValidationMixin` runs post-parse integrity checks for parent-child links and recital sequence gaps.
+- `EnrichmentMixin` computes tree metadata (`children_count`, leaf/stem flags), target paths, text stats, and document-level metadata.
+- Citation enrichment runs in-order inside `_enrich()`: `CitationExtractorMixin` first, then `CitationResolverMixin` for context-based target resolution.
+- `EUParser.parse()` orchestrates the pipeline as: detect/count -> title/recitals -> article flow (OJ or consolidated) -> annexes -> validate -> enrich.
+
 ## JSON Contract
 
 Parser output (`eurlex-parse`) is a JSON object:
