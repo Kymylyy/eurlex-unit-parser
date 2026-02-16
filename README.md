@@ -187,7 +187,7 @@ Example parser output:
 {
   "document_metadata": {
     "title": "REGULATION (EU) 2022/2554 ...",
-    "total_units": 888,
+    "total_units": 994,
     "total_articles": 64,
     "total_paragraphs": 267,
     "total_points": 385,
