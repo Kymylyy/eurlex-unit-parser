@@ -176,6 +176,205 @@ def test_external_with_article_range_multiple_regulations_plural() -> None:
     assert [citation.celex for citation in external_citations] == ["32010R1093", "32010R1094", "32010R1095"]
 
 
+def test_external_articles_enumeration_single_act() -> None:
+    units = [
+        _make_unit(
+            "u1",
+            "point",
+            text="natural or legal persons exempted pursuant to Articles 2 and 3 of Directive 2014/65/EU;",
+        )
+    ]
+    _run_enrichment(units)
+
+    citations = units[0].citations
+    assert len(citations) == 2
+    assert all(citation.citation_type == "eu_legislation" for citation in citations)
+    assert {citation.article_label for citation in citations} == {"2", "3"}
+    assert {citation.act_number for citation in citations} == {"2014/65"}
+
+
+def test_external_article_point_without_parentheses() -> None:
+    units = [
+        _make_unit(
+            "u1",
+            "point",
+            text="as defined in Article 6, point 1, of Directive (EU) 2022/2555;",
+        )
+    ]
+    _run_enrichment(units)
+
+    citations = units[0].citations
+    assert len(citations) == 1
+    citation = citations[0]
+    assert citation.citation_type == "eu_legislation"
+    assert citation.article == 6
+    assert citation.point == "1"
+    assert citation.act_number == "2022/2555"
+    assert citation.celex == "32022L2555"
+
+
+def test_external_article_mixed_enumeration_and_single() -> None:
+    units = [
+        _make_unit(
+            "u1",
+            "point",
+            text=(
+                "‘subsidiary’ means a subsidiary undertaking within the meaning of "
+                "Article 2, point (10), and Article 22 of Directive 2013/34/EU;"
+            ),
+        )
+    ]
+    _run_enrichment(units)
+
+    citations = units[0].citations
+    assert len(citations) == 2
+    assert all(citation.citation_type == "eu_legislation" for citation in citations)
+    assert [citation.article_label for citation in citations] == ["2", "22"]
+    assert [citation.point for citation in citations] == ["10", None]
+    assert {citation.act_number for citation in citations} == {"2013/34"}
+
+
+def test_external_article_point_and_followup_paragraph_same_article() -> None:
+    units = [
+        _make_unit(
+            "u1",
+            "point",
+            text="entities referred to in Article 7(4)(b) and (5) of Regulation (EU) No 806/2014.",
+        )
+    ]
+    _run_enrichment(units)
+
+    citations = units[0].citations
+    assert len(citations) == 2
+    assert all(citation.citation_type == "eu_legislation" for citation in citations)
+    assert all(citation.article == 7 for citation in citations)
+    assert sorted(citation.paragraph for citation in citations) == [4, 5]
+    by_paragraph = {citation.paragraph: citation for citation in citations}
+    assert by_paragraph[4].point == "b"
+    assert by_paragraph[5].point is None
+    assert {citation.act_number for citation in citations} == {"806/2014"}
+
+
+def test_external_articles_enumeration_with_paragraph_token() -> None:
+    units = [
+        _make_unit(
+            "u1",
+            "point",
+            text="in accordance with Articles 10 and 14(1) of Regulation (EU) 2017/2402.",
+        )
+    ]
+    _run_enrichment(units)
+
+    citations = units[0].citations
+    assert len(citations) == 2
+    assert all(citation.citation_type == "eu_legislation" for citation in citations)
+    assert [citation.article_label for citation in citations] == ["10", "14"]
+    assert [citation.paragraph for citation in citations] == [None, 1]
+    assert {citation.act_number for citation in citations} == {"2017/2402"}
+
+
+def test_external_articles_enumeration_multiple_acts_cartesian_split() -> None:
+    units = [
+        _make_unit(
+            "u1",
+            "point",
+            text=(
+                "in accordance with Articles 60 and 61 of Regulations (EU) No 1093/2010, "
+                "(EU) No 1094/2010 and (EU) No 1095/2010."
+            ),
+        )
+    ]
+    _run_enrichment(units)
+
+    citations = units[0].citations
+    assert len(citations) == 6
+    assert all(citation.citation_type == "eu_legislation" for citation in citations)
+    assert {(citation.article_label, citation.act_number) for citation in citations} == {
+        ("60", "1093/2010"),
+        ("60", "1094/2010"),
+        ("60", "1095/2010"),
+        ("61", "1093/2010"),
+        ("61", "1094/2010"),
+        ("61", "1095/2010"),
+    }
+
+
+def test_contextual_external_article_of_that_directive() -> None:
+    units = [
+        _make_unit(
+            "u1",
+            "paragraph",
+            text=(
+                "In relation to entities under Article 3 of Directive (EU) 2022/2555, "
+                "this Regulation applies for the purposes of Article 4 of that Directive."
+            ),
+        )
+    ]
+    _run_enrichment(units)
+
+    citations = units[0].citations
+    contextual = [
+        citation
+        for citation in citations
+        if citation.citation_type == "eu_legislation" and citation.article_label == "4"
+    ]
+    assert len(contextual) == 1
+    assert contextual[0].act_type == "directive"
+    assert contextual[0].act_number == "2022/2555"
+    assert not any(
+        citation.citation_type == "internal" and (citation.raw_text or "").startswith("Article 4")
+        for citation in citations
+    )
+
+
+def test_contextual_external_fallback_on_ambiguous_antecedent() -> None:
+    units = [
+        _make_unit(
+            "u1",
+            "paragraph",
+            text=(
+                "In accordance with Article 33 of Regulations (EU) No 1093/2010 and (EU) No 1094/2010, "
+                "Article 60 of that Regulation applies."
+            ),
+        )
+    ]
+    _run_enrichment(units)
+
+    citations = units[0].citations
+    assert not any(
+        citation.citation_type == "eu_legislation" and citation.article_label == "60" for citation in citations
+    )
+    assert any(
+        citation.citation_type == "internal" and (citation.raw_text or "").startswith("Article 60")
+        for citation in citations
+    )
+
+
+def test_contextual_external_uses_nearest_same_type_antecedent() -> None:
+    units = [
+        _make_unit(
+            "u1",
+            "point",
+            text=(
+                "pursuant to Directive 2013/36/EU, the competent authority is designated in accordance with "
+                "Article 4 of that Directive, and for significant institutions in accordance with "
+                "Article 6(4) of Regulation (EU) No 1024/2013."
+            ),
+        )
+    ]
+    _run_enrichment(units)
+
+    citations = units[0].citations
+    contextual = [
+        citation
+        for citation in citations
+        if citation.citation_type == "eu_legislation" and citation.article_label == "4"
+    ]
+    assert len(contextual) == 1
+    assert contextual[0].act_type == "directive"
+    assert contextual[0].act_number == "2013/36"
+
+
 def test_external_old_directive_format() -> None:
     units = [_make_unit("u1", "paragraph", text="as required by Directive 95/46/EC.")]
     _run_enrichment(units)
