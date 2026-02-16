@@ -66,8 +66,9 @@ The format is based on Keep a Changelog and this project uses Semantic Versionin
 - Batch runner subprocess calls now use package module entrypoints (`python -m eurlex_unit_parser.cli.*`).
 - Citation matcher ordering now prioritizes external point-first references before
   article-first to avoid losing leading `point (...)` segments.
-- Citation extraction now treats `Article ... of Regulations ...` multi-act references
-  as external EU legislation citations instead of internal cross-references.
+- Citation extraction now treats `Article ... of Regulations ...` and
+  `Articles ... to ... of Regulations ...` multi-act references as external
+  EU legislation citations instead of internal cross-references.
 - Internal article enumerations now emit discrete citations; article ranges are limited to explicit `to` ranges.
 - Internal article parsing now preserves alphanumeric labels (e.g. `6a`) via
   `Citation.article_label` while keeping `Citation.article` for compatibility.

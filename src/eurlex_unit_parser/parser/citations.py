@@ -109,6 +109,19 @@ class CitationExtractorMixin:
         re.IGNORECASE | re.VERBOSE,
     )
 
+    _EXTERNAL_WITH_ARTICLE_RANGE_MULTI_ACTS: Pattern[str] = re.compile(
+        r"""
+        \bArticles\s+(?P<range_start>\d+)\s+to\s+(?P<range_end>\d+)
+        \s+of\s+(?P<act_kind>Regulations?|Directives?|Decisions?)\s+
+        (?P<act_list>
+            (?:\((?:EU|EC|EEC)\)\s+)?(?:No\s+)?\d{2,4}/\d+(?:/[A-Z]{2,4})?
+            (?:\s*,\s*(?:\((?:EU|EC|EEC)\)\s+)?(?:No\s+)?\d{2,4}/\d+(?:/[A-Z]{2,4})?)*
+            (?:\s*,?\s*(?:and|or)\s+(?:\((?:EU|EC|EEC)\)\s+)?(?:No\s+)?\d{2,4}/\d+(?:/[A-Z]{2,4})?)?
+        )
+        """,
+        re.IGNORECASE | re.VERBOSE,
+    )
+
     _EXTERNAL_STANDALONE: Pattern[str] = re.compile(
         rf"""\b{_ACT_FRAGMENT}\b""",
         re.IGNORECASE,
@@ -383,6 +396,7 @@ class CitationExtractorMixin:
             (self._EXTERNAL_WITH_ARTICLE_POINT_FIRST, self._build_external_with_article),
             (self._EXTERNAL_WITH_ARTICLE_ARTICLE_FIRST, self._build_external_with_article),
             (self._EXTERNAL_WITH_ARTICLE_MULTI_ACTS, self._build_external_with_article_multi_acts),
+            (self._EXTERNAL_WITH_ARTICLE_RANGE_MULTI_ACTS, self._build_external_with_article_range_multi_acts),
             (self._EXTERNAL_STANDALONE, self._build_external_standalone),
             (self._TREATY_TFEU_TEU_SHORT, self._build_treaty_short),
             (self._TREATY_LONG_TFEU, self._build_treaty_tfeu_long),
@@ -587,6 +601,50 @@ class CitationExtractorMixin:
                     paragraph=paragraph,
                     point=point,
                     target_node_id=target_node_id,
+                    act_year=act_year,
+                    act_type=act_type,
+                    act_number=act_number,
+                    celex=celex,
+                )
+            )
+
+        return citations
+
+    def _build_external_with_article_range_multi_acts(self, match: Match[str], text: str) -> list[Citation]:
+        span_start, span_end = match.span()
+
+        raw_act_type = (match.groupdict().get("act_kind") or "").strip().lower()
+        singular_act_type = raw_act_type[:-1] if raw_act_type.endswith("s") else raw_act_type
+        act_type = self._normalize_act_type(singular_act_type)
+        if act_type is None:
+            return []
+
+        range_start = self._parse_int(match.groupdict().get("range_start"))
+        range_end = self._parse_int(match.groupdict().get("range_end"))
+        article_range = (range_start, range_end) if range_start is not None and range_end is not None else None
+
+        act_list = match.groupdict().get("act_list") or ""
+        act_pairs = re.findall(r"(?P<part1>\d{2,4})/(?P<part2>\d+)(?:/[A-Z]{2,4})?", act_list)
+
+        citations: list[Citation] = []
+        for part1, part2 in act_pairs:
+            act_number = f"{part1}/{part2}"
+            parsed = self._parse_act_year_number(part1, part2)
+            act_year = None
+            celex = None
+            if parsed is not None:
+                year, number = parsed
+                act_year = year
+                celex = self._to_celex(act_type, year, number)
+
+            citations.append(
+                Citation(
+                    raw_text=text[span_start:span_end],
+                    citation_type="eu_legislation",
+                    span_start=span_start,
+                    span_end=span_end,
+                    article_range=article_range,
+                    target_node_id=None,
                     act_year=act_year,
                     act_type=act_type,
                     act_number=act_number,
