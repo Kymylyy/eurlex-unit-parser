@@ -12,8 +12,12 @@ class ParserStateMixin:
 
     def __init__(self, source_file: str):
         self.source_file = source_file
+        self._reset_runtime_state()
+
+    def _reset_runtime_state(self) -> None:
+        """Reset parse-time state so parser instances can be reused safely."""
         self.units: list[Unit] = []
-        self.validation = ValidationReport(source_file=source_file)
+        self.validation = ValidationReport(source_file=self.source_file)
         self.document_metadata: DocumentMetadata | None = None
         self._unit_ids: set[str] = set()
         self.is_consolidated = False

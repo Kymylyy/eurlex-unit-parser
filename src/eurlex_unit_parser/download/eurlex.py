@@ -4,7 +4,21 @@ from __future__ import annotations
 
 import argparse
 import re
+from dataclasses import dataclass
 from pathlib import Path
+
+
+@dataclass
+class DownloadResult:
+    """Structured downloader result for orchestration and observability."""
+
+    ok: bool
+    status: str
+    error: str | None
+    output_path: Path
+    final_url: str | None
+    bytes_written: int
+    method: str
 
 
 def extract_name_from_url(url: str) -> str:
@@ -17,13 +31,21 @@ def extract_name_from_url(url: str) -> str:
     return "document"
 
 
-def download_eurlex(url: str, output_path: Path, lang: str = "EN") -> bool:
+def download_eurlex(url: str, output_path: Path, lang: str = "EN") -> DownloadResult:
     """Download HTML from EUR-Lex using Playwright."""
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
         print("Playwright not installed. Run: pip install playwright && playwright install chromium")
-        return False
+        return DownloadResult(
+            ok=False,
+            status="playwright_missing",
+            error="Playwright not installed.",
+            output_path=output_path,
+            final_url=None,
+            bytes_written=0,
+            method="playwright",
+        )
 
     url = re.sub(r"/[A-Z]{2}/TXT/", f"/{lang}/TXT/", url)
 
@@ -45,21 +67,57 @@ def download_eurlex(url: str, output_path: Path, lang: str = "EN") -> bool:
 
             if len(content) < 1000:
                 print("Warning: Page content seems too short, might be a challenge page")
-                return False
+                return DownloadResult(
+                    ok=False,
+                    status="content_too_short",
+                    error="Page content shorter than 1000 bytes.",
+                    output_path=output_path,
+                    final_url=url,
+                    bytes_written=0,
+                    method="playwright",
+                )
 
             if "eli-container" not in content and "eli-subdivision" not in content:
                 print("Warning: No ELI structure found in page")
 
-            output_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(output_path, "w", encoding="utf-8") as f:
-                f.write(content)
+            try:
+                output_path.parent.mkdir(parents=True, exist_ok=True)
+                with open(output_path, "w", encoding="utf-8") as f:
+                    f.write(content)
+            except OSError as e:
+                print(f"Error: {e}")
+                return DownloadResult(
+                    ok=False,
+                    status="write_error",
+                    error=str(e),
+                    output_path=output_path,
+                    final_url=url,
+                    bytes_written=0,
+                    method="playwright",
+                )
 
             print(f"Saved {len(content):,} bytes")
-            return True
+            return DownloadResult(
+                ok=True,
+                status="ok",
+                error=None,
+                output_path=output_path,
+                final_url=url,
+                bytes_written=len(content),
+                method="playwright",
+            )
 
         except Exception as e:
             print(f"Error: {e}")
-            return False
+            return DownloadResult(
+                ok=False,
+                status="navigation_error",
+                error=str(e),
+                output_path=output_path,
+                final_url=url,
+                bytes_written=0,
+                method="playwright",
+            )
         finally:
             browser.close()
 
@@ -76,8 +134,8 @@ def main() -> None:
     name = args.name or extract_name_from_url(args.url)
     output_path = Path(args.output_dir) / f"{name}.html"
 
-    success = download_eurlex(args.url, output_path, args.lang)
-    raise SystemExit(0 if success else 1)
+    result = download_eurlex(args.url, output_path, args.lang)
+    raise SystemExit(0 if result.ok else 1)
 
 
 if __name__ == "__main__":

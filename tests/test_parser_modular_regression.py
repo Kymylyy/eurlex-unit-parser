@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from parse_eu import EUParser
+from eurlex_unit_parser import EUParser
 
 
 def _parse(html: str):

@@ -2,7 +2,59 @@
 
 This file tracks planned engineering work that is intentionally not implemented yet.
 
-## P1: First-class footnote handling
+## P1: Amendment aggregation and relation extraction
+
+- Status: Proposed
+- Priority: High
+- Last updated: 2026-02-16
+
+### Problem statement
+
+`Unit.is_amendment_text` currently marks local parser context but does not produce
+an aggregate, document-level map of which external acts are amended and how those
+relations should be surfaced for downstream graph tooling.
+
+Relevant code paths:
+
+- `src/eurlex_unit_parser/parser/oj.py` (amending article detection heuristics)
+- `src/eurlex_unit_parser/parser/enrichment.py` (`amendment_articles` metadata)
+- `src/eurlex_unit_parser/parser/citations.py` (citations currently skipped in amendment text units)
+
+### Target outcome
+
+Provide a deterministic aggregate amendment layer that captures amended target acts
+at document level, beyond boolean `is_amendment_text`, while preserving current parse quality.
+
+### Scope
+
+- Define amendment-relation representation in parser output/API.
+- Detect and aggregate amended target acts for amendment-heavy articles.
+- Keep unit-level `is_amendment_text` as low-level signal, but add higher-level resolved view.
+- Add regression coverage for amendment relation extraction.
+
+### Non-goals
+
+- Full legal-effect interpretation beyond explicit amendment language.
+- Redesigning the full citation engine in one step.
+
+### Acceptance criteria
+
+- Amended target acts are available in deterministic aggregate output.
+- Existing parser and coverage regressions remain green.
+- New regression tests cover:
+  - positive amendment aggregation cases,
+  - no false positives on non-amending articles,
+  - stable output for benchmark documents.
+
+### Implementation checklist
+
+- [ ] Define schema/API fields for aggregated amendment relations.
+- [ ] Implement extraction and aggregation logic.
+- [ ] Add regression tests for aggregation and false-positive guards.
+- [ ] Validate with `ruff`, `mypy`, `pytest`, and batch coverage.
+- [ ] Document behavior in `README.md` and `CHANGELOG.md` once implemented.
+
+## P2: First-class footnote handling
 
 - Status: Proposed
 - Priority: High
@@ -52,7 +104,7 @@ Footnotes should be captured as structured data instead of being only stripped, 
 - [ ] Validate with `ruff`, `mypy`, `pytest`, and batch coverage.
 - [ ] Document behavior in `README.md` and `CHANGELOG.md` once implemented.
 
-## P2: Citation extraction v0.2 expansion
+## P3: Citation extraction v0.2 expansion
 
 - Status: Implemented
 - Priority: Medium

@@ -7,7 +7,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from parse_eu import EUParser
+from eurlex_unit_parser import EUParser
 
 
 HTML_DIR = Path(__file__).parent.parent / "downloads" / "eur-lex"

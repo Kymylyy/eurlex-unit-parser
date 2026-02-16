@@ -23,7 +23,6 @@ playwright install chromium
 Run these checks locally:
 
 ```bash
-python3 -m py_compile parse_eu.py test_coverage.py run_batch.py download_eurlex.py
 ruff check .
 mypy src/eurlex_unit_parser
 pytest -q
@@ -33,12 +32,6 @@ For benchmark-impacting parser changes, also run:
 
 ```bash
 eurlex-batch --force-reparse --oracle mirror
-```
-
-Legacy equivalent remains supported:
-
-```bash
-python3 run_batch.py --force-reparse --oracle mirror
 ```
 
 ## Canonical Example Refresh
@@ -70,5 +63,5 @@ PYTHONPATH=src python3 -m eurlex_unit_parser.cli.parse --input downloads/eur-lex
 Use Conventional Commits where possible, for example:
 
 - `refactor: split parser into modular flows`
-- `test: add legacy wrapper compatibility coverage`
+- `test: add package public API coverage`
 - `build: add pyproject and package scripts`

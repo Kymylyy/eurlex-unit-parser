@@ -95,7 +95,12 @@ def test_download_eurlex_returns_false_when_playwright_missing(monkeypatch, tmp_
         return real_import(name, *args, **kwargs)
 
     monkeypatch.setattr(builtins, "__import__", fake_import)
-    assert eurlex.download_eurlex("https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32024R1689", tmp_path / "out.html") is False
+    result = eurlex.download_eurlex(
+        "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32024R1689",
+        tmp_path / "out.html",
+    )
+    assert result.ok is False
+    assert result.status == "playwright_missing"
 
 
 def test_download_eurlex_writes_file_and_applies_language(monkeypatch, tmp_path: Path) -> None:
@@ -104,13 +109,17 @@ def test_download_eurlex_writes_file_and_applies_language(monkeypatch, tmp_path:
     _install_fake_playwright(monkeypatch, page)
     out_path = tmp_path / "d" / "doc.html"
 
-    ok = eurlex.download_eurlex(
+    result = eurlex.download_eurlex(
         "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32024R1689",
         out_path,
         lang="PL",
     )
 
-    assert ok is True
+    assert result.ok is True
+    assert result.status == "ok"
+    assert result.bytes_written == len(content)
+    assert result.final_url is not None
+    assert "/PL/TXT/" in result.final_url
     assert out_path.exists()
     assert page.goto_url is not None
     assert "/PL/TXT/" in page.goto_url
@@ -121,7 +130,9 @@ def test_download_eurlex_returns_false_for_short_content(monkeypatch, tmp_path: 
     _install_fake_playwright(monkeypatch, page)
     out_path = tmp_path / "short.html"
 
-    assert eurlex.download_eurlex("https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32024R1689", out_path) is False
+    result = eurlex.download_eurlex("https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32024R1689", out_path)
+    assert result.ok is False
+    assert result.status == "content_too_short"
     assert not out_path.exists()
 
 
@@ -129,11 +140,28 @@ def test_download_eurlex_returns_false_on_runtime_error(monkeypatch, tmp_path: P
     page = _FakePage(content="<html><body>unused</body></html>", raise_on_goto=True)
     _install_fake_playwright(monkeypatch, page)
 
-    assert eurlex.download_eurlex("https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32024R1689", tmp_path / "err.html") is False
+    result = eurlex.download_eurlex(
+        "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32024R1689",
+        tmp_path / "err.html",
+    )
+    assert result.ok is False
+    assert result.status == "navigation_error"
 
 
 def test_main_returns_exit_code_based_on_download_result(monkeypatch, tmp_path: Path) -> None:
-    monkeypatch.setattr(eurlex, "download_eurlex", lambda *_args, **_kwargs: True)
+    monkeypatch.setattr(
+        eurlex,
+        "download_eurlex",
+        lambda *_args, **_kwargs: eurlex.DownloadResult(
+            ok=True,
+            status="ok",
+            error=None,
+            output_path=tmp_path / "dummy.html",
+            final_url="https://eur-lex.europa.eu",
+            bytes_written=1,
+            method="playwright",
+        ),
+    )
     monkeypatch.setattr(
         sys,
         "argv",
