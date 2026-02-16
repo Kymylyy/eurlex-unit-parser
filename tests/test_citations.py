@@ -129,6 +129,27 @@ def test_external_with_article() -> None:
     assert citations[0].celex == "32016R0679"
 
 
+def test_external_with_article_multiple_regulations_plural() -> None:
+    units = [
+        _make_unit(
+            "u1",
+            "paragraph",
+            text=(
+                "In accordance with Article 16 of Regulations (EU) No 1093/2010, "
+                "(EU) No 1094/2010 and (EU) No 1095/2010."
+            ),
+        )
+    ]
+    _run_enrichment(units)
+
+    citations = units[0].citations
+    assert len(citations) == 3
+    assert all(citation.citation_type == "eu_legislation" for citation in citations)
+    assert all(citation.article == 16 for citation in citations)
+    assert [citation.act_number for citation in citations] == ["1093/2010", "1094/2010", "1095/2010"]
+    assert [citation.celex for citation in citations] == ["32010R1093", "32010R1094", "32010R1095"]
+
+
 def test_external_old_directive_format() -> None:
     units = [_make_unit("u1", "paragraph", text="as required by Directive 95/46/EC.")]
     _run_enrichment(units)
