@@ -74,6 +74,11 @@ The format is based on Keep a Changelog and this project uses Semantic Versionin
 - Internal article enumerations now emit discrete citations; article ranges are limited to explicit `to` ranges.
 - Internal article parsing now preserves alphanumeric labels (e.g. `6a`) via
   `Citation.article_label` while keeping `Citation.article` for compatibility.
+- Citation resolver now maps standalone internal `points (...)` references to the nearest
+  same-clause internal anchor context (e.g. `paragraph 1, points (a) and (b)`) with
+  parent-subparagraph fallback for nested point units.
+- Citation resolver now reclassifies bare `that Directive/that Regulation/that Decision`
+  references to `eu_legislation` when a unique matching antecedent act is present in the same unit.
 - Parser enrichment pipeline now runs citation extraction and includes `citations` in JSON output.
 - Parser flows now populate `subparagraph_index` wherever `subparagraph` ordering is known
   (including standard OJ subparagraphs, amending paths, and non-list table extraction).
