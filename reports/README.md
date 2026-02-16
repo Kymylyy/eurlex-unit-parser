@@ -10,5 +10,5 @@ Generated files (gitignored):
 To regenerate:
 
 ```bash
-python3 run_batch.py --force-reparse --oracle mirror
+eurlex-batch --force-reparse --oracle mirror
 ```

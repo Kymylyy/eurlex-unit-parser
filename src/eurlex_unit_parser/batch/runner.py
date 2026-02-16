@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -20,9 +21,9 @@ SUCCESS_FILE = REPORTS_DIR / "eurlex_coverage_success.jsonl"
 FAILURE_FILE = REPORTS_DIR / "eurlex_coverage_failures.jsonl"
 BATCH_REPORTS_DIR = REPORTS_DIR / "batches"
 
-PARSER = BASE / "parse_eu.py"
-COVERAGE = BASE / "test_coverage.py"
-DOWNLOADER = BASE / "download_eurlex.py"
+PARSER_MODULE = "eurlex_unit_parser.cli.parse"
+COVERAGE_MODULE = "eurlex_unit_parser.cli.coverage"
+DOWNLOADER_MODULE = "eurlex_unit_parser.cli.download"
 
 DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
 JSON_DIR.mkdir(parents=True, exist_ok=True)
@@ -35,6 +36,15 @@ def ensure_output_dirs() -> None:
     JSON_DIR.mkdir(parents=True, exist_ok=True)
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
     BATCH_REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def _subprocess_env() -> dict[str, str]:
+    """Ensure subprocess module invocations can import local src package."""
+    env = os.environ.copy()
+    src_path = str(BASE / "src")
+    current = env.get("PYTHONPATH")
+    env["PYTHONPATH"] = src_path if not current else f"{src_path}{os.pathsep}{current}"
+    return env
 
 
 def stable_hash(url: str) -> str:
@@ -95,7 +105,8 @@ def download_html(url: str, html_path: Path) -> tuple[bool, str]:
         result = subprocess.run(
             [
                 sys.executable,
-                str(DOWNLOADER),
+                "-m",
+                DOWNLOADER_MODULE,
                 url,
                 html_path.stem,
                 "--output-dir",
@@ -104,6 +115,7 @@ def download_html(url: str, html_path: Path) -> tuple[bool, str]:
             capture_output=True,
             text=True,
             timeout=120,
+            env=_subprocess_env(),
         )
         if result.returncode == 0 and html_path.exists() and html_path.stat().st_size > 1000:
             return True, "playwright"
@@ -141,7 +153,8 @@ def parse_html(html_path: Path, json_path: Path, force: bool = False) -> tuple[b
         result = subprocess.run(
             [
                 sys.executable,
-                str(PARSER),
+                "-m",
+                PARSER_MODULE,
                 "--input",
                 str(html_path),
                 "--out",
@@ -151,6 +164,7 @@ def parse_html(html_path: Path, json_path: Path, force: bool = False) -> tuple[b
             capture_output=True,
             text=True,
             timeout=120,
+            env=_subprocess_env(),
         )
         if result.returncode == 0 and json_path.exists():
             return True, "ok"
@@ -179,7 +193,8 @@ def run_coverage(html_path: Path, json_path: Path, oracle: str = "naive") -> dic
         result = subprocess.run(
             [
                 sys.executable,
-                str(COVERAGE),
+                "-m",
+                COVERAGE_MODULE,
                 "-i",
                 str(html_path),
                 "-j",
@@ -190,6 +205,7 @@ def run_coverage(html_path: Path, json_path: Path, oracle: str = "naive") -> dic
             capture_output=True,
             text=True,
             timeout=120,
+            env=_subprocess_env(),
         )
         output = result.stdout + result.stderr
 

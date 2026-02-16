@@ -30,6 +30,7 @@ class EUParser(
     """Parser for EU Official Journal HTML files."""
 
     def parse(self, html_content: str) -> list[Unit]:
+        self._reset_runtime_state()
         self.soup = BeautifulSoup(html_content, "lxml")
 
         self._detect_format()

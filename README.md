@@ -11,7 +11,7 @@ It converts ELI-style legislation pages into structured JSON with document metad
 - Core validation corpus: 52 EUR-Lex documents (`data/eurlex_links.jsonl`)
 - Extended validation corpus: 70 EUR-Lex documents (`data/eurlex_test_links.jsonl`, source CSV in `data/eurlex_test_links.csv`)
 - Latest extended batch run (2026-02-10): 70/70 PASS (`mirror` oracle, batches of 10)
-- Architecture: modular package (`src/eurlex_unit_parser`) with legacy wrappers preserved
+- Architecture: modular package (`src/eurlex_unit_parser`) with package-first public API
 
 Current benchmark target remains `mirror` oracle with forced reparse.
 
@@ -40,12 +40,6 @@ Optional downloader dependency:
 ```bash
 python3 -m pip install -e .[download]
 playwright install chromium
-```
-
-### Option B: legacy script mode
-
-```bash
-python3 -m pip install -r requirements.txt
 ```
 
 ## Usage
@@ -79,7 +73,7 @@ eurlex-batch --links-file data/eurlex_test_links.jsonl --offset 0 --limit 10 --f
 - Convert candidate CSV links to JSONL:
 
 ```bash
-python3 convert_links_csv.py --input data/eurlex_test_links.csv --output data/eurlex_test_links.jsonl
+python3 -m eurlex_unit_parser.batch.links_convert --input data/eurlex_test_links.csv --output data/eurlex_test_links.jsonl
 ```
 
 - Downloader:
@@ -88,28 +82,51 @@ python3 convert_links_csv.py --input data/eurlex_test_links.csv --output data/eu
 eurlex-download "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202401689" EMIR3
 ```
 
-### Legacy CLI (still supported)
-
-- `python3 parse_eu.py ...`
-- `python3 test_coverage.py ...`
-- `python3 run_batch.py ...`
-- `python3 convert_links_csv.py ...`
-- `python3 download_eurlex.py ...`
-
 ## Public API
 
-### New package imports
+### Package imports
 
 ```python
-from eurlex_unit_parser import Citation, EUParser, Unit, ValidationReport
+from eurlex_unit_parser import (
+    Citation,
+    DownloadResult,
+    EUParser,
+    JobResult,
+    ParseResult,
+    Unit,
+    ValidationReport,
+    download_and_parse,
+    download_eurlex,
+    parse_file,
+    parse_html,
+)
 ```
 
-### Legacy imports (still supported)
+### Library integration API
+
+Use the facade helpers in `eurlex_unit_parser.api` (also exported at package root):
 
 ```python
-from parse_eu import EUParser
-from parse_eu import remove_note_tags, normalize_text, strip_leading_label, is_list_table, get_cell_text
+from pathlib import Path
+from eurlex_unit_parser import download_and_parse, parse_file
+
+# Parse existing HTML
+result = parse_file("downloads/eur-lex/32022R2554.html")
+print(result.validation.is_valid(), len(result.units))
+
+# Download + parse in one single-document job
+job = download_and_parse(
+    "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022R2554",
+    Path("downloads/eur-lex/32022R2554.html"),
+)
+if job.download.ok and job.parse:
+    print(job.download.bytes_written, len(job.parse.units))
+else:
+    print(job.download.status, job.download.error, job.parse_error)
 ```
+
+`download_eurlex(...)` now returns `DownloadResult` with structured status fields:
+`ok`, `status`, `error`, `output_path`, `final_url`, `bytes_written`, `method`.
 
 ## How it works
 
@@ -123,6 +140,7 @@ from parse_eu import remove_note_tags, normalize_text, strip_leading_label, is_l
 - `EnrichmentMixin` computes tree metadata (`children_count`, leaf/stem flags), target paths, text stats, and document-level metadata.
 - Citation enrichment runs in-order inside `_enrich()`: `CitationExtractorMixin` first, then `CitationResolverMixin` for context-based target resolution.
 - `EUParser.parse()` orchestrates the pipeline as: detect/count -> title/recitals -> article flow (OJ or consolidated) -> annexes -> validate -> enrich.
+- `EUParser.parse()` resets runtime parser state on every call, so reusing one parser instance does not accumulate units across parses.
 
 ## JSON Contract
 
@@ -264,7 +282,7 @@ Example parser output:
 
 ## Quality Gates
 
-Batch pass criteria used by `eurlex-batch` / `run_batch.py`:
+Batch pass criteria used by `eurlex-batch`:
 
 - `gone == 0`
 - `phantom == 0`
@@ -291,12 +309,8 @@ Batch CLI supports:
 │   ├── coverage/                 # coverage extraction/comparison/report logic
 │   ├── batch/                    # batch pipeline
 │   ├── download/                 # EUR-Lex downloader
+│   ├── api.py                    # high-level single-document library facade
 │   └── cli/                      # CLI entrypoints
-├── parse_eu.py                   # legacy wrapper + re-exports
-├── test_coverage.py              # legacy wrapper + re-exports
-├── run_batch.py                  # legacy wrapper + re-exports
-├── convert_links_csv.py          # CSV -> JSONL links converter wrapper
-├── download_eurlex.py            # legacy wrapper + re-exports
 └── tests/                        # regression + compatibility tests
 ```
 

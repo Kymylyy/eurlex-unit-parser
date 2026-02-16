@@ -25,7 +25,7 @@ jobs:
 
       - name: Compile check
         run: |
-          python -m py_compile parse_eu.py test_coverage.py run_batch.py download_eurlex.py
+          python -m compileall -q src tests scripts
 
       - name: Lint
         run: |

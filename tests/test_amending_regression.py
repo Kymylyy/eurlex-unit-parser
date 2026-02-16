@@ -10,8 +10,8 @@ import pytest
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from parse_eu import EUParser
-from test_coverage import (
+from eurlex_unit_parser import EUParser
+from eurlex_unit_parser.coverage import (
     coverage_test, validate_hierarchy, validate_ordering,
     build_full_html_text_by_section, build_json_section_texts,
 )
