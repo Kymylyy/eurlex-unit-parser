@@ -94,6 +94,42 @@ class CitationExtractorMixin:
         re.IGNORECASE | re.VERBOSE,
     )
 
+    _ACT_LIST_FRAGMENT = (
+        r"(?P<act_list>"
+        r"(?:\((?:EU|EC|EEC)\)\s+)?(?:No\s+)?\d{2,4}/\d+(?:/[A-Z]{2,4})?"
+        r"(?:\s*,\s*(?:\((?:EU|EC|EEC)\)\s+)?(?:No\s+)?\d{2,4}/\d+(?:/[A-Z]{2,4})?)*"
+        r"(?:\s*,?\s*(?:and|or)\s+(?:\((?:EU|EC|EEC)\)\s+)?(?:No\s+)?\d{2,4}/\d+(?:/[A-Z]{2,4})?)?"
+        r")"
+    )
+
+    _ARTICLE_BLOCK_FRAGMENT = (
+        r"(?P<article_block>"
+        r"Articles?\s+"
+        r"(?:\d+[a-z]?|\([a-z0-9]+\)|Article|Articles|point|points|and|or|to|respectively|,|\s)+?"
+        r")"
+    )
+
+    _EXTERNAL_WITH_ARTICLE_BLOCK_ACTS: Pattern[str] = re.compile(
+        rf"""
+        \b{_ARTICLE_BLOCK_FRAGMENT}
+        \s+of\s+(?P<act_kind>Regulations?|Directives?|Decisions?)\s+{_ACT_LIST_FRAGMENT}\b
+        """,
+        re.IGNORECASE | re.VERBOSE,
+    )
+
+    _EXTERNAL_WITH_ARTICLE_BLOCK_CONTEXTUAL: Pattern[str] = re.compile(
+        rf"""
+        \b{_ARTICLE_BLOCK_FRAGMENT}
+        \s+of\s+that\s+(?P<context_kind>Regulation|Directive|Decision)\b
+        """,
+        re.IGNORECASE | re.VERBOSE,
+    )
+
+    _EXTERNAL_ACT_BLOCK: Pattern[str] = re.compile(
+        rf"""\b(?P<act_kind>Regulations?|Directives?|Decisions?)\s+{_ACT_LIST_FRAGMENT}\b""",
+        re.IGNORECASE,
+    )
+
     _EXTERNAL_WITH_ARTICLE_MULTI_ACTS: Pattern[str] = re.compile(
         r"""
         \bArticle\s+(?P<article>\d+[a-z]?)
@@ -394,6 +430,8 @@ class CitationExtractorMixin:
 
         builders: list[tuple[Pattern[str], Callable[[Match[str], str], BuilderResult]]] = [
             (self._EXTERNAL_WITH_ARTICLE_POINT_FIRST, self._build_external_with_article),
+            (self._EXTERNAL_WITH_ARTICLE_BLOCK_ACTS, self._build_external_with_article_block_acts),
+            (self._EXTERNAL_WITH_ARTICLE_BLOCK_CONTEXTUAL, self._build_external_with_article_block_contextual),
             (self._EXTERNAL_WITH_ARTICLE_ARTICLE_FIRST, self._build_external_with_article),
             (self._EXTERNAL_WITH_ARTICLE_MULTI_ACTS, self._build_external_with_article_multi_acts),
             (self._EXTERNAL_WITH_ARTICLE_RANGE_MULTI_ACTS, self._build_external_with_article_range_multi_acts),
@@ -528,6 +566,41 @@ class CitationExtractorMixin:
             act_type=act_type,
             act_number=act_number,
             celex=celex,
+        )
+
+    def _build_external_with_article_block_acts(self, match: Match[str], text: str) -> list[Citation]:
+        span_start, span_end = match.span()
+        article_block = match.groupdict().get("article_block") or ""
+        article_refs = self._parse_external_article_block(article_block)
+        act_refs = self._parse_explicit_act_references(
+            match.groupdict().get("act_kind"),
+            match.groupdict().get("act_list"),
+        )
+        return self._build_external_article_act_citations(
+            raw_text=text[span_start:span_end],
+            span_start=span_start,
+            span_end=span_end,
+            article_refs=article_refs,
+            act_refs=act_refs,
+        )
+
+    def _build_external_with_article_block_contextual(self, match: Match[str], text: str) -> list[Citation]:
+        span_start, span_end = match.span()
+        article_block = match.groupdict().get("article_block") or ""
+        article_refs = self._parse_external_article_block(article_block)
+        contextual_act = self._resolve_contextual_act_reference(
+            text=text,
+            span_start=span_start,
+            context_kind=match.groupdict().get("context_kind"),
+        )
+        if contextual_act is None:
+            return []
+        return self._build_external_article_act_citations(
+            raw_text=text[span_start:span_end],
+            span_start=span_start,
+            span_end=span_end,
+            article_refs=article_refs,
+            act_refs=[contextual_act],
         )
 
     def _build_external_standalone(self, match: Match[str], text: str) -> Citation | None:
@@ -1251,6 +1324,256 @@ class CitationExtractorMixin:
         if normalized_start is None or normalized_end is None:
             return None
         return normalized_start, normalized_end
+
+    def _build_external_article_act_citations(
+        self,
+        raw_text: str,
+        span_start: int,
+        span_end: int,
+        article_refs: list[dict[str, object]],
+        act_refs: list[dict[str, object]],
+    ) -> list[Citation]:
+        if not article_refs or not act_refs:
+            return []
+
+        citations: list[Citation] = []
+        for article_ref in article_refs:
+            article = article_ref.get("article")
+            article_label = article_ref.get("article_label")
+            paragraph = article_ref.get("paragraph")
+            point = article_ref.get("point")
+            point_range = article_ref.get("point_range")
+            article_range = article_ref.get("article_range")
+
+            is_range = isinstance(article_range, tuple)
+            target_node_id = (
+                None
+                if is_range
+                else self._to_node_id(
+                    article_label=article_label if isinstance(article_label, str) else None,
+                    paragraph=paragraph if isinstance(paragraph, int) else None,
+                    point=point if isinstance(point, str) else None,
+                )
+            )
+
+            for act_ref in act_refs:
+                citations.append(
+                    Citation(
+                        raw_text=raw_text,
+                        citation_type="eu_legislation",
+                        span_start=span_start,
+                        span_end=span_end,
+                        article=article if isinstance(article, int) else None,
+                        article_label=article_label if isinstance(article_label, str) else None,
+                        paragraph=paragraph if isinstance(paragraph, int) else None,
+                        point=point if isinstance(point, str) else None,
+                        point_range=point_range if isinstance(point_range, tuple) else None,
+                        article_range=article_range if isinstance(article_range, tuple) else None,
+                        target_node_id=target_node_id,
+                        act_year=act_ref.get("act_year") if isinstance(act_ref.get("act_year"), int) else None,
+                        act_type=act_ref.get("act_type") if isinstance(act_ref.get("act_type"), str) else None,
+                        act_number=act_ref.get("act_number") if isinstance(act_ref.get("act_number"), str) else None,
+                        celex=act_ref.get("celex") if isinstance(act_ref.get("celex"), str) else None,
+                    )
+                )
+
+        return citations
+
+    def _parse_explicit_act_references(self, act_kind: str | None, act_list: str | None) -> list[dict[str, object]]:
+        if act_kind is None or act_list is None:
+            return []
+
+        normalized_kind = act_kind.strip().lower()
+        singular_kind = normalized_kind[:-1] if normalized_kind.endswith("s") else normalized_kind
+        act_type = self._normalize_act_type(singular_kind)
+        if act_type is None:
+            return []
+
+        act_pairs = re.findall(r"(?P<part1>\d{2,4})/(?P<part2>\d+)(?:/[A-Z]{2,4})?", act_list)
+        act_refs: list[dict[str, object]] = []
+        for part1, part2 in act_pairs:
+            act_number = f"{part1}/{part2}"
+            parsed = self._parse_act_year_number(part1, part2)
+            act_year = None
+            celex = None
+            if parsed is not None:
+                year, number = parsed
+                act_year = year
+                celex = self._to_celex(act_type, year, number)
+
+            act_refs.append(
+                {
+                    "act_type": act_type,
+                    "act_number": act_number,
+                    "act_year": act_year,
+                    "celex": celex,
+                }
+            )
+
+        return act_refs
+
+    def _resolve_contextual_act_reference(
+        self,
+        text: str,
+        span_start: int,
+        context_kind: str | None,
+    ) -> dict[str, object] | None:
+        act_type = self._normalize_act_type(context_kind)
+        if act_type is None:
+            return None
+
+        prefix = text[:span_start]
+        matching_blocks: list[list[dict[str, object]]] = []
+        for match in self._EXTERNAL_ACT_BLOCK.finditer(prefix):
+            act_refs = self._parse_explicit_act_references(
+                match.groupdict().get("act_kind"),
+                match.groupdict().get("act_list"),
+            )
+            if not act_refs:
+                continue
+            block_act_type = act_refs[0].get("act_type")
+            if block_act_type != act_type:
+                continue
+            matching_blocks.append(act_refs)
+
+        if not matching_blocks:
+            return None
+
+        nearest_block_refs = matching_blocks[-1]
+        if len(nearest_block_refs) != 1:
+            return None
+        return nearest_block_refs[0]
+
+    def _parse_external_article_block(self, article_block: str) -> list[dict[str, object]]:
+        normalized = re.sub(r"\s+", " ", article_block).strip().rstrip(",")
+        normalized = re.sub(r",\s*respectively\s*$", "", normalized, flags=re.IGNORECASE)
+        if not normalized:
+            return []
+
+        if normalized.lower().startswith("articles "):
+            body = normalized[9:].strip()
+            range_match = re.fullmatch(r"(?P<start>\d+)\s+to\s+(?P<end>\d+)", body, flags=re.IGNORECASE)
+            if range_match:
+                range_start = self._parse_int(range_match.group("start"))
+                range_end = self._parse_int(range_match.group("end"))
+                if range_start is None or range_end is None:
+                    return []
+                return [
+                    {
+                        "article": None,
+                        "article_label": None,
+                        "paragraph": None,
+                        "point": None,
+                        "point_range": None,
+                        "article_range": (range_start, range_end),
+                    }
+                ]
+
+            tokens = re.findall(r"\d+[a-z]?(?:\(\d+\))?(?:\([a-z0-9]+\))?", body, flags=re.IGNORECASE)
+            article_refs = [ref for token in tokens if (ref := self._parse_external_article_token(token)) is not None]
+            return article_refs
+
+        segment_pattern = re.compile(
+            r"""
+            Article\s+\d+[a-z]?
+            (?:\s?\(\d+\))?
+            (?:\s?\([a-z0-9]+\))?
+            (?:\s*,\s*point\s+\(?[a-z0-9]+\)?)?
+            """,
+            re.IGNORECASE | re.VERBOSE,
+        )
+        segment_matches = list(segment_pattern.finditer(normalized))
+        if not segment_matches:
+            return []
+
+        article_refs = [
+            ref
+            for segment in segment_matches
+            if (ref := self._parse_external_article_segment(segment.group(0))) is not None
+        ]
+        if not article_refs:
+            return []
+
+        if len(segment_matches) == 1:
+            remainder = normalized[segment_matches[0].end() :]
+            extra_paragraph_match = re.fullmatch(
+                r"\s*,?\s*(?:and|or)\s+\((?P<paragraph>\d+)\)\s*",
+                remainder,
+                flags=re.IGNORECASE,
+            )
+            if extra_paragraph_match:
+                base_article_label = article_refs[0].get("article_label")
+                base_article = article_refs[0].get("article")
+                extra_paragraph = self._parse_int(extra_paragraph_match.group("paragraph"))
+                if (
+                    isinstance(base_article_label, str)
+                    and isinstance(base_article, int)
+                    and isinstance(extra_paragraph, int)
+                ):
+                    article_refs.append(
+                        {
+                            "article": base_article,
+                            "article_label": base_article_label,
+                            "paragraph": extra_paragraph,
+                            "point": None,
+                            "point_range": None,
+                            "article_range": None,
+                        }
+                    )
+
+        return article_refs
+
+    def _parse_external_article_token(self, token: str) -> dict[str, object] | None:
+        normalized = token.strip().rstrip(",")
+        match = re.fullmatch(
+            r"(?P<article>\d+[a-z]?)(?:\((?P<paragraph>\d+)\))?(?:\((?P<point>[a-z0-9]+)\))?",
+            normalized,
+            flags=re.IGNORECASE,
+        )
+        if not match:
+            return None
+
+        article, article_label = self._parse_article(match.group("article"))
+        if article_label is None:
+            return None
+
+        return {
+            "article": article,
+            "article_label": article_label,
+            "paragraph": self._parse_int(match.groupdict().get("paragraph")),
+            "point": self._normalize_point(match.groupdict().get("point")),
+            "point_range": None,
+            "article_range": None,
+        }
+
+    def _parse_external_article_segment(self, segment: str) -> dict[str, object] | None:
+        normalized = segment.strip().rstrip(",")
+        match = re.fullmatch(
+            r"""
+            Article\s+(?P<article>\d+[a-z]?)
+            (?:\s?\((?P<paragraph>\d+)\))?
+            (?:\s?\((?P<point_inline>[a-z0-9]+)\))?
+            (?:\s*,\s*point\s+\(?(?P<point_comma>[a-z0-9]+)\)?)?
+            """,
+            normalized,
+            flags=re.IGNORECASE | re.VERBOSE,
+        )
+        if not match:
+            return None
+
+        article, article_label = self._parse_article(match.group("article"))
+        if article_label is None:
+            return None
+
+        point = self._normalize_point(match.groupdict().get("point_comma") or match.groupdict().get("point_inline"))
+        return {
+            "article": article,
+            "article_label": article_label,
+            "paragraph": self._parse_int(match.groupdict().get("paragraph")),
+            "point": point,
+            "point_range": None,
+            "article_range": None,
+        }
 
     @staticmethod
     def _normalize_act_type(act_type: str | None) -> str | None:
