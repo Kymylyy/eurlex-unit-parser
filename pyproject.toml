@@ -10,10 +10,25 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = { file = "LICENSE" }
 authors = [{ name = "EUR-Lex Parser Contributors" }]
+classifiers = [
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Text Processing",
+]
 dependencies = [
   "lxml>=4.9.0",
   "beautifulsoup4>=4.12.0",
+  "requests>=2.31.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/Kymylyy/eurlex-unit-parser"
+Repository = "https://github.com/Kymylyy/eurlex-unit-parser"
+Issues = "https://github.com/Kymylyy/eurlex-unit-parser/issues"
+Changelog = "https://github.com/Kymylyy/eurlex-unit-parser/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 download = [
