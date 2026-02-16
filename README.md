@@ -207,6 +207,11 @@ Key `Citation` fields:
 Breaking change: legacy root-list JSON is no longer supported by coverage/batch tools.
 
 Citation note: a single phrase may intentionally emit multiple citation objects when it references multiple targets (for example `Articles 13 and 14`).
+Resolver note: standalone `points (...)` citations now inherit article/paragraph context from the nearest
+preceding internal anchor in the same clause (for example `paragraph 1, points (a) and (b)`), with
+subparagraph parent-chain fallback when no anchor exists.
+Resolver note: bare `that Directive/that Regulation/that Decision` references are reclassified to
+`eu_legislation` when exactly one matching antecedent act of the same type exists earlier in the same unit.
 
 Canonical example in repo:
 
