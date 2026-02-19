@@ -2,8 +2,16 @@
 
 from eurlex_unit_parser.api import JobResult, ParseResult, download_and_parse, parse_file, parse_html
 from eurlex_unit_parser.download.eurlex import DownloadResult, download_eurlex, extract_name_from_url
-from eurlex_unit_parser.models import Citation, DocumentMetadata, Unit, ValidationReport
+from eurlex_unit_parser.models import (
+    Citation,
+    DocumentMetadata,
+    LSUSummary,
+    LSUSummarySection,
+    Unit,
+    ValidationReport,
+)
 from eurlex_unit_parser.parser.engine import EUParser
+from eurlex_unit_parser.summary import fetch_lsu_summary
 from eurlex_unit_parser.text_utils import (
     get_cell_text,
     is_list_table,
@@ -24,8 +32,11 @@ __all__ = [
     "JobResult",
     "Citation",
     "DocumentMetadata",
+    "LSUSummary",
+    "LSUSummarySection",
     "Unit",
     "ValidationReport",
+    "fetch_lsu_summary",
     "remove_note_tags",
     "normalize_text",
     "strip_leading_label",

@@ -292,3 +292,37 @@ class DocumentMetadata:
         default_factory=list,
         description="Article numbers identified as amendatory articles.",
     )
+
+
+@dataclass
+class LSUSummarySection:
+    """One section extracted from a EUR-Lex LSU (Summaries of EU legislation) page."""
+
+    heading: str = schema_field("Section heading text, typically from the LSU `h2` node.")
+    content: str = schema_field("Normalized plain-text content of the section body.")
+
+
+@dataclass
+class LSUSummary:
+    """Structured LSU summary extracted for a legal act CELEX identifier."""
+
+    celex: str = schema_field("CELEX identifier used to query LSU.")
+    language: str = schema_field("Two-letter language code used for LSU fetch, e.g. `EN`.")
+    title: str = schema_field("Summary title extracted from LSU page `h1`.")
+    source_url: str = schema_field("Requested LSU source URL.")
+    sections: list[LSUSummarySection] = schema_field(
+        default_factory=list,
+        description="Ordered LSU sections with heading and normalized text content.",
+    )
+    canonical_url: Optional[str] = schema_field(
+        default=None,
+        description="Canonical LSU URL if exposed by page metadata.",
+    )
+    last_modified_text: Optional[str] = schema_field(
+        default=None,
+        description="Human-readable last update text from LSU page.",
+    )
+    last_modified_date: Optional[str] = schema_field(
+        default=None,
+        description="Machine-readable date from LSU last update marker (`YYYY-MM-DD`) when available.",
+    )
