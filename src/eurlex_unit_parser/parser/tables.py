@@ -92,7 +92,6 @@ class TablesParserMixin:
         parent_id: str,
         article_num: Optional[str],
         paragraph_num: Optional[str],
-        is_direct: bool = False,
         depth: int = 0,
         max_depth: int = 10,
         is_amendment: bool = False,
@@ -102,7 +101,6 @@ class TablesParserMixin:
 
         depth: 0 = point, 1 = subpoint, 2 = subsubpoint, 3+ = nested_N.
         """
-        _ = is_direct
         if depth >= max_depth:
             return
 

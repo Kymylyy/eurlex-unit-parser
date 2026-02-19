@@ -172,11 +172,58 @@ class OJParserMixin:
     def _parse_paragraphs(self, paragraph_divs: list[Tag], article_id: str, article_num: str) -> None:
         for idx, par_div in enumerate(paragraph_divs):
             par_source_id = par_div.get("id", "")
-            par_num = None
-            par_id = None
-            current_parent = None
+            par_num: str | None = None
+            par_id: str | None = None
+            current_parent: str | None = None
             subpar_idx = 0
             pending_tables: list[Tag] = []
+
+            def parse_paragraph_like_node(node: Tag) -> None:
+                nonlocal par_num, par_id, current_parent, subpar_idx
+                if pending_tables and current_parent:
+                    self._parse_point_tables(pending_tables, current_parent, article_num, par_num)
+                    pending_tables.clear()
+
+                p_copy = BeautifulSoup(str(node), "lxml").find("p") or node
+                remove_note_tags(p_copy)
+                text = p_copy.get_text(separator=" ", strip=True)
+
+                if par_id is None:
+                    text_content, par_num = strip_leading_label(text)
+                    par_id = f"{article_id}.par-{par_num}" if par_num else f"{article_id}.par-{idx + 1}"
+
+                    par_unit = Unit(
+                        id=par_id,
+                        type="paragraph",
+                        ref=f"{par_num}." if par_num else None,
+                        text=normalize_text(text_content),
+                        parent_id=article_id,
+                        source_id=par_source_id,
+                        source_file=self.source_file,
+                        article_number=article_num,
+                        paragraph_number=par_num,
+                        paragraph_index=idx + 1 if not par_num else None,
+                    )
+                    self._add_unit(par_unit)
+                    current_parent = par_id
+                    return
+
+                subpar_idx += 1
+                subpar_id = f"{par_id}.subpar-{subpar_idx}"
+                subpar_unit = Unit(
+                    id=subpar_id,
+                    type="subparagraph",
+                    ref=None,
+                    text=normalize_text(text),
+                    parent_id=par_id,
+                    source_id=node.get("id", ""),
+                    source_file=self.source_file,
+                    article_number=article_num,
+                    paragraph_number=par_num,
+                    subparagraph_index=subpar_idx,
+                )
+                self._add_unit(subpar_unit)
+                current_parent = subpar_id
 
             for child in par_div.children:
                 if not isinstance(child, Tag):
@@ -207,50 +254,7 @@ class OJParserMixin:
                     or "oj-ti-tbl" in child.get("class", [])
                     or "oj-note" in child.get("class", [])
                 ):
-                    if pending_tables and current_parent:
-                        self._parse_point_tables(pending_tables, current_parent, article_num, par_num)
-                        pending_tables = []
-
-                    p_copy = BeautifulSoup(str(child), "lxml").find("p") or child
-                    remove_note_tags(p_copy)
-                    text = p_copy.get_text(separator=" ", strip=True)
-
-                    if par_id is None:
-                        text_content, par_num = strip_leading_label(text)
-                        par_id = f"{article_id}.par-{par_num}" if par_num else f"{article_id}.par-{idx + 1}"
-
-                        par_unit = Unit(
-                            id=par_id,
-                            type="paragraph",
-                            ref=f"{par_num}." if par_num else None,
-                            text=normalize_text(text_content),
-                            parent_id=article_id,
-                            source_id=par_source_id,
-                            source_file=self.source_file,
-                            article_number=article_num,
-                            paragraph_number=par_num,
-                            paragraph_index=idx + 1 if not par_num else None,
-                        )
-                        self._add_unit(par_unit)
-                        current_parent = par_id
-                    else:
-                        subpar_idx += 1
-                        subpar_id = f"{par_id}.subpar-{subpar_idx}"
-
-                        subpar_unit = Unit(
-                            id=subpar_id,
-                            type="subparagraph",
-                            ref=None,
-                            text=normalize_text(text),
-                            parent_id=par_id,
-                            source_id=child.get("id", ""),
-                            source_file=self.source_file,
-                            article_number=article_num,
-                            paragraph_number=par_num,
-                            subparagraph_index=subpar_idx,
-                        )
-                        self._add_unit(subpar_unit)
-                        current_parent = subpar_id
+                    parse_paragraph_like_node(child)
 
                 elif child.name == "table":
                     pending_tables.append(child)
@@ -260,50 +264,7 @@ class OJParserMixin:
                     child_classes = child.get("class", [])
                     if not child_id and "eli-subdivision" not in child_classes and "eli-title" not in child_classes:
                         for p in child.find_all("p", class_="oj-normal", recursive=False):
-                            if pending_tables and current_parent:
-                                self._parse_point_tables(pending_tables, current_parent, article_num, par_num)
-                                pending_tables = []
-
-                            p_copy = BeautifulSoup(str(p), "lxml").find("p") or p
-                            remove_note_tags(p_copy)
-                            text = p_copy.get_text(separator=" ", strip=True)
-
-                            if par_id is None:
-                                text_content, par_num = strip_leading_label(text)
-                                par_id = f"{article_id}.par-{par_num}" if par_num else f"{article_id}.par-{idx + 1}"
-                                self._add_unit(
-                                    Unit(
-                                        id=par_id,
-                                        type="paragraph",
-                                        ref=f"{par_num}." if par_num else None,
-                                        text=normalize_text(text_content),
-                                        parent_id=article_id,
-                                        source_id=par_source_id,
-                                        source_file=self.source_file,
-                                        article_number=article_num,
-                                        paragraph_number=par_num,
-                                        paragraph_index=idx + 1 if not par_num else None,
-                                    )
-                                )
-                                current_parent = par_id
-                            else:
-                                subpar_idx += 1
-                                subpar_id = f"{par_id}.subpar-{subpar_idx}"
-                                self._add_unit(
-                                    Unit(
-                                        id=subpar_id,
-                                        type="subparagraph",
-                                        ref=None,
-                                        text=normalize_text(text),
-                                        parent_id=par_id,
-                                        source_id=p.get("id", ""),
-                                        source_file=self.source_file,
-                                        article_number=article_num,
-                                        paragraph_number=par_num,
-                                        subparagraph_index=subpar_idx,
-                                    )
-                                )
-                                current_parent = subpar_id
+                            parse_paragraph_like_node(p)
 
             if pending_tables:
                 if current_parent is None:
@@ -356,7 +317,6 @@ class OJParserMixin:
                         current_parent,
                         article_num,
                         None,
-                        is_direct=True,
                     )
                     pending_tables = []
 
@@ -413,7 +373,6 @@ class OJParserMixin:
                                 current_parent,
                                 article_num,
                                 None,
-                                is_direct=True,
                             )
                             pending_tables = []
 
@@ -458,7 +417,7 @@ class OJParserMixin:
                             current_parent = subpar_id
 
         if pending_tables and current_parent:
-            self._parse_point_tables(pending_tables, current_parent, article_num, None, is_direct=True)
+            self._parse_point_tables(pending_tables, current_parent, article_num, None)
 
     def _parse_amending_article(self, article_div: Tag, article_id: str, article_num: str) -> None:
         skip_classes = {"oj-ti-art", "oj-sti-art", "oj-doc-ti"}
