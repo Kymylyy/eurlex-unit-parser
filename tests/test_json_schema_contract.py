@@ -30,6 +30,8 @@ def test_output_schema_accepts_minimal_empty_payload() -> None:
     schema = _load_json(SCHEMAS_DIR / "eurlex-output.schema.json")
     payload = {
         "document_metadata": None,
+        "summary_lsu": None,
+        "summary_lsu_status": "disabled",
         "units": [],
     }
 

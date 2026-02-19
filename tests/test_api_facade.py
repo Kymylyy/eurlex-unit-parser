@@ -32,11 +32,13 @@ def test_parser_parse_resets_runtime_state_between_calls() -> None:
 
 
 def test_parse_html_returns_parse_result() -> None:
-    result = parse_html(_simple_html("7"), source_file="inline.html")
+    result = parse_html(_simple_html("7"), source_file="inline.html", with_summary_lsu=False)
 
     assert isinstance(result, ParseResult)
     assert result.source_file == "inline.html"
     assert len(result.units) == 2
+    assert result.summary_lsu is None
+    assert result.summary_lsu_status == "disabled"
     assert result.validation.counts_parsed == {"article": 1, "paragraph": 1}
 
 
@@ -44,11 +46,13 @@ def test_parse_file_reads_file_and_parses(tmp_path: Path) -> None:
     path = tmp_path / "sample.html"
     path.write_text(_simple_html("2"), encoding="utf-8")
 
-    result = parse_file(path)
+    result = parse_file(path, with_summary_lsu=False)
 
     assert isinstance(result, ParseResult)
     assert result.source_file == str(path)
     assert len(result.units) == 2
+    assert result.summary_lsu is None
+    assert result.summary_lsu_status == "disabled"
     assert result.validation.counts_parsed == {"article": 1, "paragraph": 1}
 
 
@@ -65,6 +69,7 @@ def test_download_and_parse_returns_parse_result_on_success(monkeypatch, tmp_pat
         method="playwright",
     )
     monkeypatch.setattr("eurlex_unit_parser.api.download_eurlex", lambda *_args, **_kwargs: download_result)
+    monkeypatch.setattr("eurlex_unit_parser.api.fetch_lsu_summary", lambda **_kwargs: (None, "ok"))
 
     job = download_and_parse(
         "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32022R2554",
@@ -76,6 +81,8 @@ def test_download_and_parse_returns_parse_result_on_success(monkeypatch, tmp_pat
     assert job.download.ok is True
     assert job.parse is not None
     assert job.parse_error is None
+    assert job.parse.summary_lsu is None
+    assert job.parse.summary_lsu_status == "ok"
     assert len(job.parse.units) == 2
 
 
@@ -124,3 +131,15 @@ def test_download_and_parse_returns_parse_error_on_unreadable_file(monkeypatch, 
     assert job.download.ok is True
     assert job.parse is None
     assert job.parse_error is not None
+
+
+def test_parse_html_fetches_lsu_by_default(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "eurlex_unit_parser.api.fetch_lsu_summary",
+        lambda **_kwargs: (None, "not_found"),
+    )
+
+    result = parse_html(_simple_html("8"), source_file="inline.html")
+
+    assert result.summary_lsu is None
+    assert result.summary_lsu_status == "not_found"

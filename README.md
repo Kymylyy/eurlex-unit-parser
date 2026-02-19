@@ -92,10 +92,13 @@ from eurlex_unit_parser import (
     DownloadResult,
     EUParser,
     JobResult,
+    LSUSummary,
+    LSUSummarySection,
     ParseResult,
     Unit,
     ValidationReport,
     download_and_parse,
+    fetch_lsu_summary,
     download_eurlex,
     parse_file,
     parse_html,
@@ -113,6 +116,7 @@ from eurlex_unit_parser import download_and_parse, parse_file
 # Parse existing HTML
 result = parse_file("downloads/eur-lex/32022R2554.html")
 print(result.validation.is_valid(), len(result.units))
+print(result.summary_lsu_status, bool(result.summary_lsu))
 
 # Download + parse in one single-document job
 job = download_and_parse(
@@ -120,9 +124,13 @@ job = download_and_parse(
     Path("downloads/eur-lex/32022R2554.html"),
 )
 if job.download.ok and job.parse:
-    print(job.download.bytes_written, len(job.parse.units))
+    print(job.download.bytes_written, len(job.parse.units), job.parse.summary_lsu_status)
 else:
     print(job.download.status, job.download.error, job.parse_error)
+
+# Optional: skip LSU fetch when running offline
+result_no_lsu = parse_file("downloads/eur-lex/32022R2554.html", with_summary_lsu=False)
+print(result_no_lsu.summary_lsu_status)  # disabled
 ```
 
 `download_eurlex(...)` now returns `DownloadResult` with structured status fields:
@@ -147,6 +155,8 @@ else:
 Parser output (`eurlex-parse`) is a JSON object:
 
 - `document_metadata`: document-level summary and aggregate counters.
+- `summary_lsu`: optional LSU summary payload (or `null`).
+- `summary_lsu_status`: LSU enrichment status (`ok`, `not_found`, `fetch_error`, `celex_missing`, `disabled`).
 - `units`: flat array of parsed units in document order.
 
 Validation output (`--validation`) is a separate JSON object described by `ValidationReport`.
@@ -231,6 +241,22 @@ Example parser output:
     "has_annexes": false,
     "amendment_articles": ["59", "60", "61", "62", "63"]
   },
+  "summary_lsu": {
+    "celex": "32022R2554",
+    "language": "EN",
+    "title": "Digital operational resilience for the financial sector",
+    "sections": [
+      {
+        "heading": "SUMMARY OF:",
+        "content": "Regulation (EU) 2022/2554 on digital operational resilience for the financial sector"
+      }
+    ],
+    "source_url": "https://eur-lex.europa.eu/legal-content/EN/LSU/?uri=CELEX:32022R2554",
+    "canonical_url": "https://eur-lex.europa.eu/EN/legal-content/summary/digital-operational-resilience-for-the-financial-sector.html",
+    "last_modified_text": "last update 26.1.2026",
+    "last_modified_date": "2026-01-26"
+  },
+  "summary_lsu_status": "ok",
   "units": [
     {
       "id": "art-5.par-2.subpar-1",
@@ -284,6 +310,13 @@ Example parser output:
   ]
 }
 ```
+
+LSU enrichment controls in `eurlex-parse`:
+
+- default behavior: LSU fetch enabled
+- `--no-summary-lsu`: disable LSU fetch (`summary_lsu_status=disabled`)
+- `--summary-lsu-lang <LANG>`: override LSU language (default: auto-detect from source HTML, fallback `EN`)
+- `--celex <CELEX>`: explicit CELEX override for LSU query
 
 ## Quality Gates
 

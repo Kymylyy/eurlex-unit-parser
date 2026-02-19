@@ -9,6 +9,10 @@ from dataclasses import asdict
 from pathlib import Path
 
 from eurlex_unit_parser import EUParser
+from eurlex_unit_parser.summary import (
+    LSU_STATUS_DISABLED,
+    fetch_lsu_summary,
+)
 
 
 def main() -> None:
@@ -26,6 +30,19 @@ def main() -> None:
     parser.add_argument("--no-validation", action="store_true", help="Disable validation report generation")
     parser.add_argument("--out-dir", default="out", help="Base output directory (default: out)")
     parser.add_argument("--coverage", action="store_true", help="Run coverage test after parsing")
+    parser.add_argument(
+        "--no-summary-lsu",
+        action="store_true",
+        help="Disable LSU summary fetch and emit `summary_lsu_status=disabled`.",
+    )
+    parser.add_argument(
+        "--summary-lsu-lang",
+        help="Optional two-letter language override for LSU summary fetch (default: auto from source HTML).",
+    )
+    parser.add_argument(
+        "--celex",
+        help="Optional CELEX override used for LSU summary fetch.",
+    )
 
     args = parser.parse_args()
 
@@ -56,10 +73,21 @@ def main() -> None:
 
     eu_parser = EUParser(source_file=str(input_path))
     units = eu_parser.parse(html_content)
+    if args.no_summary_lsu:
+        summary_lsu, summary_lsu_status = None, LSU_STATUS_DISABLED
+    else:
+        summary_lsu, summary_lsu_status = fetch_lsu_summary(
+            html_content=html_content,
+            source_file=str(input_path),
+            celex=args.celex,
+            language=args.summary_lsu_lang,
+        )
 
     units_data = [asdict(u) for u in units]
     output_data = {
         "document_metadata": asdict(eu_parser.document_metadata) if eu_parser.document_metadata else None,
+        "summary_lsu": asdict(summary_lsu) if summary_lsu else None,
+        "summary_lsu_status": summary_lsu_status,
         "units": units_data,
     }
 

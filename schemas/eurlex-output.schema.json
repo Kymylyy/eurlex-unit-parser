@@ -306,6 +306,88 @@
       "title": "DocumentMetadata",
       "type": "object"
     },
+    "LSUSummary": {
+      "additionalProperties": false,
+      "description": "Structured LSU summary extracted for a legal act CELEX identifier.",
+      "properties": {
+        "canonical_url": {
+          "description": "Canonical LSU URL if exposed by page metadata.",
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "celex": {
+          "description": "CELEX identifier used to query LSU.",
+          "type": "string"
+        },
+        "language": {
+          "description": "Two-letter language code used for LSU fetch, e.g. `EN`.",
+          "type": "string"
+        },
+        "last_modified_date": {
+          "description": "Machine-readable date from LSU last update marker (`YYYY-MM-DD`) when available.",
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "last_modified_text": {
+          "description": "Human-readable last update text from LSU page.",
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "sections": {
+          "description": "Ordered LSU sections with heading and normalized text content.",
+          "items": {
+            "$ref": "#/$defs/LSUSummarySection"
+          },
+          "type": "array"
+        },
+        "source_url": {
+          "description": "Requested LSU source URL.",
+          "type": "string"
+        },
+        "title": {
+          "description": "Summary title extracted from LSU page `h1`.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "celex",
+        "language",
+        "title",
+        "source_url",
+        "sections",
+        "canonical_url",
+        "last_modified_text",
+        "last_modified_date"
+      ],
+      "title": "LSUSummary",
+      "type": "object"
+    },
+    "LSUSummarySection": {
+      "additionalProperties": false,
+      "description": "One section extracted from a EUR-Lex LSU (Summaries of EU legislation) page.",
+      "properties": {
+        "content": {
+          "description": "Normalized plain-text content of the section body.",
+          "type": "string"
+        },
+        "heading": {
+          "description": "Section heading text, typically from the LSU `h2` node.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "heading",
+        "content"
+      ],
+      "title": "LSUSummarySection",
+      "type": "object"
+    },
     "Unit": {
       "additionalProperties": false,
       "description": "Represents one parsed structural unit (title, recital, article, paragraph, point, annex item).",
@@ -553,6 +635,28 @@
       ],
       "description": "Document-level summary metadata computed from parsed units."
     },
+    "summary_lsu": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/LSUSummary"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Optional LSU (Summaries of EU legislation) enrichment."
+    },
+    "summary_lsu_status": {
+      "description": "LSU summary fetch status.",
+      "enum": [
+        "ok",
+        "not_found",
+        "fetch_error",
+        "celex_missing",
+        "disabled"
+      ],
+      "type": "string"
+    },
     "units": {
       "description": "Flat array of parsed legal units.",
       "items": {
@@ -563,6 +667,8 @@
   },
   "required": [
     "document_metadata",
+    "summary_lsu",
+    "summary_lsu_status",
     "units"
   ],
   "title": "EUR-Lex Parser Output",

@@ -7,6 +7,18 @@ The format is based on Keep a Changelog and this project uses Semantic Versionin
 ## [Unreleased]
 
 ### Added
+- LSU (Summaries of EU legislation) enrichment support across CLI and API:
+  - new summary models `LSUSummary` and `LSUSummarySection`,
+  - LSU fetch/parse helpers in `eurlex_unit_parser.summary`,
+  - CELEX resolution fallback from source HTML, filename, and consolidated->base CELEX normalization.
+- `eurlex-parse` LSU flags:
+  - `--no-summary-lsu`,
+  - `--summary-lsu-lang`,
+  - `--celex`.
+- Parser output JSON contract extensions:
+  - top-level `summary_lsu`,
+  - top-level `summary_lsu_status` (`ok`, `not_found`, `fetch_error`, `celex_missing`, `disabled`).
+- LSU regression tests for success, not-found, fetch-error, celex-missing, and consolidated CELEX fallback.
 - Formal JSON Schema artifacts (Draft 2020-12):
   - `schemas/eurlex-output.schema.json` for parser output payloads,
   - `schemas/eurlex-validation.schema.json` for validation report payloads.

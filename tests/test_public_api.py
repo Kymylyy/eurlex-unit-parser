@@ -14,6 +14,8 @@ def test_package_public_imports() -> None:
 
     assert hasattr(eurlex_unit_parser, "EUParser")
     assert hasattr(eurlex_unit_parser, "DocumentMetadata")
+    assert hasattr(eurlex_unit_parser, "LSUSummary")
+    assert hasattr(eurlex_unit_parser, "LSUSummarySection")
     assert hasattr(eurlex_unit_parser, "Unit")
     assert hasattr(eurlex_unit_parser, "ValidationReport")
     assert hasattr(eurlex_unit_parser, "DownloadResult")
@@ -21,6 +23,7 @@ def test_package_public_imports() -> None:
     assert hasattr(eurlex_unit_parser, "parse_html")
     assert hasattr(eurlex_unit_parser, "parse_file")
     assert hasattr(eurlex_unit_parser, "download_and_parse")
+    assert hasattr(eurlex_unit_parser, "fetch_lsu_summary")
     assert hasattr(eurlex_unit_parser, "ParseResult")
     assert hasattr(eurlex_unit_parser, "JobResult")
 

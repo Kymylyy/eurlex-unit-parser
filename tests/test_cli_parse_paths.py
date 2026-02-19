@@ -51,6 +51,7 @@ def test_main_writes_json_and_default_validation_report(monkeypatch, tmp_path: P
     input_html.write_text("<html><body>ok</body></html>", encoding="utf-8")
     out_dir = tmp_path / "out"
     monkeypatch.setattr(parse_cli, "EUParser", _FakeParser)
+    monkeypatch.setattr(parse_cli, "fetch_lsu_summary", lambda **_kwargs: (None, "disabled"))
     monkeypatch.setattr(
         sys,
         "argv",
@@ -66,6 +67,8 @@ def test_main_writes_json_and_default_validation_report(monkeypatch, tmp_path: P
 
     payload = json.loads(output_path.read_text(encoding="utf-8"))
     assert payload["document_metadata"]["title"] == "REGULATION (EU) 2024/1"
+    assert payload["summary_lsu"] is None
+    assert payload["summary_lsu_status"] == "disabled"
     assert len(payload["units"]) == 1
 
 
@@ -74,6 +77,7 @@ def test_main_exits_1_when_coverage_flag_reports_failure(monkeypatch, tmp_path: 
     input_html.write_text("<html><body>ok</body></html>", encoding="utf-8")
     out_path = tmp_path / "out.json"
     monkeypatch.setattr(parse_cli, "EUParser", _FakeParser)
+    monkeypatch.setattr(parse_cli, "fetch_lsu_summary", lambda **_kwargs: (None, "disabled"))
 
     import eurlex_unit_parser.coverage as coverage_mod
 
@@ -90,3 +94,26 @@ def test_main_exits_1_when_coverage_flag_reports_failure(monkeypatch, tmp_path: 
         parse_cli.main()
 
     assert exc.value.code == 1
+
+
+def test_main_no_summary_lsu_sets_disabled_without_fetch(monkeypatch, tmp_path: Path) -> None:
+    input_html = tmp_path / "sample.html"
+    input_html.write_text("<html><body>ok</body></html>", encoding="utf-8")
+    out_path = tmp_path / "out.json"
+    monkeypatch.setattr(parse_cli, "EUParser", _FakeParser)
+    monkeypatch.setattr(
+        parse_cli,
+        "fetch_lsu_summary",
+        lambda **_kwargs: (_ for _ in ()).throw(AssertionError("fetch_lsu_summary should not be called")),
+    )
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["eurlex-parse", "--input", str(input_html), "--out", str(out_path), "--no-summary-lsu"],
+    )
+
+    parse_cli.main()
+
+    payload = json.loads(out_path.read_text(encoding="utf-8"))
+    assert payload["summary_lsu"] is None
+    assert payload["summary_lsu_status"] == "disabled"

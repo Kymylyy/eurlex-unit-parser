@@ -16,7 +16,13 @@ SRC_DIR = REPO_ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-from eurlex_unit_parser.models import DocumentMetadata, Unit, ValidationReport  # noqa: E402
+from eurlex_unit_parser.models import (  # noqa: E402
+    DocumentMetadata,
+    LSUSummary,
+    LSUSummarySection,
+    Unit,
+    ValidationReport,
+)
 
 OUTPUT_SCHEMA_NAME = "eurlex-output.schema.json"
 VALIDATION_SCHEMA_NAME = "eurlex-validation.schema.json"
@@ -145,6 +151,8 @@ def build_output_schema() -> dict[str, Any]:
     defs: dict[str, dict[str, Any]] = {}
     _ensure_dataclass_schema(Unit, defs)
     _ensure_dataclass_schema(DocumentMetadata, defs)
+    _ensure_dataclass_schema(LSUSummarySection, defs)
+    _ensure_dataclass_schema(LSUSummary, defs)
 
     schema = _base_schema(
         title="EUR-Lex Parser Output",
@@ -162,13 +170,31 @@ def build_output_schema() -> dict[str, Any]:
                         {"type": "null"},
                     ],
                 },
+                "summary_lsu": {
+                    "description": "Optional LSU (Summaries of EU legislation) enrichment.",
+                    "anyOf": [
+                        {"$ref": "#/$defs/LSUSummary"},
+                        {"type": "null"},
+                    ],
+                },
+                "summary_lsu_status": {
+                    "description": "LSU summary fetch status.",
+                    "type": "string",
+                    "enum": [
+                        "ok",
+                        "not_found",
+                        "fetch_error",
+                        "celex_missing",
+                        "disabled",
+                    ],
+                },
                 "units": {
                     "description": "Flat array of parsed legal units.",
                     "type": "array",
                     "items": {"$ref": "#/$defs/Unit"},
                 },
             },
-            "required": ["document_metadata", "units"],
+            "required": ["document_metadata", "summary_lsu", "summary_lsu_status", "units"],
             "$defs": defs,
         }
     )
